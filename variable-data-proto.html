@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>통합편집기 — 가변 데이터 프로토타입</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Anton&family=Bebas+Neue&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f5f6; --panel:#ffffff; --line:#e9eaec; --line2:#f0f1f3;
+    --ink:#191b1f; --muted:#8a8d93; --muted2:#b4b7bd;
+    --accent:#2f6bff; --accent-soft:#eef3ff;
+    --warn:#e0860b; --warn-soft:#fff6e8; --danger:#e5484d; --danger-soft:#fdecec;
+    --ok:#16a34a; --ok-soft:#e9f7ee; --rail:#fafafb;
+    --r-lg:14px; --r-md:10px; --r-sm:8px;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select{font-family:inherit}
+
+  .harness{display:flex;align-items:center;gap:14px;padding:9px 18px;background:#15171c;color:#fff}
+  .harness .tag{font-size:11px;letter-spacing:.04em;color:#9aa0aa;text-transform:uppercase;font-weight:600}
+  .harness .cases{display:flex;gap:6px}
+  .harness .case-btn{padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#c7ccd4;background:#23262e}
+  .harness .case-btn.on{background:#fff;color:#15171c}
+  .harness .note{margin-left:auto;font-size:12px;color:#7e848e}
+
+  .editor{display:flex;flex-direction:column;height:calc(100vh - 41px);min-height:560px}
+  .topbar{display:flex;align-items:center;gap:14px;height:58px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .topbar .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#33363c}
+  .topbar .ic svg{width:20px;height:20px}
+  .topbar .ic:hover{background:#f2f3f5}
+  .topbar .crumb{font-size:14px;color:#33363c}
+  .topbar .spacer{flex:1}
+  .topbar .save{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap}
+  .topbar .save svg{width:17px;height:17px;flex:none}
+  .save.dark{background:#15171c;color:#fff}
+  .save.blue{background:var(--accent);color:#fff}
+
+  .body{flex:1;display:flex;min-height:0}
+  .rail{width:78px;background:var(--rail);border-right:1px solid var(--line);padding:14px 0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+  .rail .item{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;color:#7c8087;font-size:11px;font-weight:500}
+  .rail .item svg{width:22px;height:22px}
+  .rail .item.on{color:var(--accent)}
+  .rail .item.on .glyph{background:var(--accent-soft)}
+  .rail .glyph{width:38px;height:38px;border-radius:11px;display:grid;place-items:center}
+
+  .panel{width:340px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .panel-head{padding:18px 20px 14px;border-bottom:1px solid var(--line2)}
+  .panel-head h2{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .panel-head h2 svg{width:20px;height:20px;flex:none}
+  .panel-head .sub{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+  .panel-body{flex:1;overflow-y:auto;padding:16px 20px 24px}
+
+  .seclabel{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--muted);text-transform:uppercase;margin:20px 0 10px;display:flex;align-items:center;gap:6px}
+  .seclabel:first-child{margin-top:0}
+  .seclabel .step{width:17px;height:17px;border-radius:5px;background:var(--ink);color:#fff;font-size:10px;display:grid;place-items:center;font-weight:700}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:600;color:#5a5e66;background:#fff}
+  .chip:hover{border-color:var(--muted2)}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .slotinfo{margin-top:11px;background:#fafafb;border:1px solid var(--line);border-radius:var(--r-md);padding:12px 13px}
+  .slotinfo .t{font-size:12px;font-weight:700;color:#33363c;margin-bottom:8px}
+  .slotrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#4a4e56;padding:3px 0}
+  .slotrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .slotrow .meta{margin-left:auto;color:var(--muted);font-size:11.5px}
+
+  .fieldmap{display:flex;flex-direction:column;gap:7px}
+  .field{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px;font-weight:600;background:#fff}
+  .field .pill{margin-left:auto;font-size:11px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:3px 8px;border-radius:999px;display:flex;align-items:center;gap:4px}
+  .field .pill svg{width:11px;height:11px;flex:none}
+  .hint{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:9px}
+
+  .selectbox{position:relative}
+  .selectbox select{width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;-webkit-appearance:none;appearance:none}
+  .selectbox::after{content:"⌄";position:absolute;right:13px;top:8px;color:var(--muted);pointer-events:none}
+  .swatches{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+  .sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+  .sw.on{box-shadow:0 0 0 2px var(--accent)}
+  .ftoggle{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:13px;font-weight:600;background:#fff;margin-bottom:7px;cursor:pointer}
+  .ftoggle.off{opacity:.6;background:#fafafb}
+  .ftoggle input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex:none}
+  .ftoggle .loc{margin-left:auto;font-size:11.5px;font-weight:500;color:var(--muted)}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .dcard{position:relative;display:flex;flex-direction:column;gap:7px;padding:10px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;cursor:pointer;text-align:left;font:inherit}
+  .dcard:hover{border-color:var(--accent)}
+  .dcard.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+  .dthumb{display:grid;place-items:center;background:#f5f6f8;border-radius:8px;padding:9px 0}
+  .dmeta{display:flex;flex-direction:column;gap:1px}
+  .dn{font-size:12.5px;font-weight:700;color:var(--ink)}
+  .dsport{font-size:11px;color:var(--muted)}
+  .dcur{position:absolute;top:8px;right:8px;font-size:10px;font-weight:700;color:#fff;background:var(--accent);border-radius:20px;padding:2px 7px}
+  .curtpl{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fafbfc}
+  .ct-thumb{flex:none;width:42px;height:42px;display:grid;place-items:center;background:#fff;border-radius:8px;border:1px solid var(--line2)}
+  .ct-thumb svg{width:34px;height:32px}
+  .ct-meta{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+  .ct-sport{font-size:11px;color:var(--muted)}
+  .ct-name{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ct-change{flex:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .ct-change:hover{border-color:var(--accent);color:var(--accent)}
+  .vt select.rsz{width:100%;padding:6px 4px;border:1px solid var(--line);border-radius:7px;font-size:12px;background:#fff;text-align:center;cursor:pointer}
+  .vt select.rsz.miss{border-color:var(--danger);color:var(--danger)}
+  .rqty{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .rqty button{width:24px;height:26px;border:none;background:#f6f7f9;font-size:14px;cursor:pointer;color:var(--ink)}
+  .rqty button:hover{background:#eceef1}
+  .rqty span{min-width:26px;text-align:center;font-size:12.5px;font-weight:700}
+  .szcell,.qtycell{text-align:center}
+  .cartsum{border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:9px}
+  .cs-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#4a4e56}
+  .cs-row b{font-size:14px;color:var(--ink)}
+  .szwrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:65%}
+  .szpill{background:#f1f3f6;border-radius:20px;padding:3px 9px;font-size:11.5px;color:#4a4e56}
+  .szpill b{color:var(--ink)}
+  .clist{display:flex;flex-direction:column;gap:0;max-height:230px;overflow:auto}
+  .citem{display:flex;align-items:center;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--line2)}
+  .citem:last-child{border-bottom:none}
+  .ci-right{display:flex;align-items:center;gap:12px}
+  .ci-sz{font-size:12.5px;font-weight:700;color:var(--ink);background:#f1f3f6;border-radius:6px;padding:3px 9px}
+  .ci-sz.miss{background:#fdecec;color:var(--danger)}
+  .ci-q{font-size:12.5px;color:var(--muted);min-width:34px;text-align:right}
+  .sizehdr a,.alert a{color:var(--accent);cursor:pointer;text-decoration:underline}
+  .citem .who{display:flex;align-items:center;gap:9px;min-width:0}
+  .citem .av{width:30px;height:30px;border-radius:8px;background:#eef0f2;display:grid;place-items:center;font-size:12px;font-weight:800;color:#5a5e66;flex:none}
+  .citem .nm{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .citem .nn{font-size:11.5px;color:var(--muted)}
+  .devnote{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#fdecec;border:1px solid #ef9a9a;color:#c62b30;font-size:12px;font-weight:700;padding:8px 14px;border-radius:9px;white-space:nowrap;z-index:5;box-shadow:0 2px 8px rgba(198,43,48,.14)}
+  .devnote2{background:#fdecec;border:1px solid #ef9a9a;color:#c62b30;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:9px;margin-bottom:12px}
+
+  .bigbtn{width:100%;display:flex;align-items:center;gap:11px;padding:14px;border:1px solid var(--line);border-radius:var(--r-md);background:#fff;margin-top:8px;text-align:left}
+  .bigbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .bigbtn .bi{width:38px;height:38px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);flex:none}
+  .bigbtn .bi svg{width:20px;height:20px}
+  .bigbtn .bt{font-size:13.5px;font-weight:700}
+  .bigbtn .bs{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .bigbtn .arr{margin-left:auto;color:var(--muted2);font-size:18px}
+  .statusline{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-top:10px;color:#4a4e56;width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 13px;background:#fff;text-align:left;cursor:pointer}
+  .statusline:hover{background:#f7f8fa;border-color:var(--accent)}
+  .statusline .tag2{font-weight:700}
+  .statusline .go{margin-left:auto;color:var(--accent);font-weight:700;white-space:nowrap}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;border:1px solid var(--line);color:#33363c;background:#fff}
+  .btn:hover{background:#f7f8fa}
+  .btn svg{width:14px;height:14px;flex:none}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{background:#000}
+  .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .panel-foot{padding:14px 20px;border-top:1px solid var(--line2);display:flex;gap:8px;background:#fff}
+  .panel-foot .btn{flex:1;justify-content:center;padding:11px}
+
+  /* canvas */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg);min-width:0;overflow:hidden}
+  .canvaswrap{position:relative}
+  .tee{filter:drop-shadow(0 10px 28px rgba(0,0,0,.07))}
+  .printzone{position:absolute;border:1.5px dashed var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:move}
+  .printzone[data-slot]:hover{box-shadow:0 0 0 3px var(--accent-soft)}
+  .printzone.dragging{box-shadow:0 8px 20px rgba(47,107,255,.3);opacity:.96}
+  .movehint{font-size:11px;color:var(--muted);margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);line-height:1.5}
+  .movehint a{color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+  .printzone .pname{font-weight:800;letter-spacing:.02em;line-height:1;white-space:nowrap}
+  .printzone .pnum{font-weight:900;line-height:.85}
+  .zonetag{position:absolute;top:-9px;left:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px}
+  .nowsel{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;background:#15171c;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:999px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .nowsel b{font-weight:800}
+  .liveflag{font-size:10px;background:#2bbf6a;color:#08311c;padding:2px 7px;border-radius:999px;font-weight:800}
+  .zoombar{position:absolute;right:18px;bottom:18px;display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px;box-shadow:var(--shadow)}
+  .zoombar button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#5a5e66}
+
+  .thumbs{width:118px;border-left:1px solid var(--line);background:var(--panel);padding:14px 12px;display:flex;flex-direction:column;gap:14px}
+  .thumb{cursor:pointer}
+  .thumb .frame{border:2px solid var(--line);border-radius:10px;padding:8px;background:#fff;aspect-ratio:1;display:grid;place-items:center}
+  .thumb.on .frame{border-color:var(--accent)}
+  .thumb .cap{text-align:center;font-size:11.5px;color:#5a5e66;margin-top:6px;font-weight:600}
+  .thumb.on .cap{color:var(--accent)}
+
+  /* overlays / modals */
+  .overlay{position:fixed;inset:0;background:rgba(20,22,27,.42);display:none;align-items:center;justify-content:center;z-index:40;padding:24px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:18px;width:min(860px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+  .modal.narrow{width:min(560px,94vw)}
+  .modal-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .modal-head h3{font-size:18px;font-weight:700}
+  .modal-head .cnt{font-size:12.5px;color:var(--muted);font-weight:600}
+  .modal-head .x{margin-left:auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#5a5e66;background:#f0f1f3}
+  .modal-head .x:hover{background:#e6e7ea}
+  .modal-sub{padding:12px 22px 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .modal-body{flex:1;overflow-y:auto;padding:16px 22px 20px}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .modal-foot .sp{flex:1}
+  .modal-foot .lg{font-size:13px;color:#4a4e56}
+  .modal-foot .lg b{color:var(--ink)}
+
+  /* roster table (in modal) */
+  .tbl-tools{display:flex;gap:7px;margin-bottom:10px}
+  .vt{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .vt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);padding:0 8px 8px;white-space:nowrap}
+  .vt td{padding:0;border-bottom:1px solid var(--line2)}
+  .vt tr.sel td{background:var(--accent-soft)}
+  .idx{width:26px;text-align:center;color:var(--muted2);font-size:11px;font-weight:600}
+  .cell input{width:100%;border:1px solid transparent;background:transparent;padding:10px 8px;font-size:13px;border-radius:6px;color:var(--ink)}
+  .cell input:focus{outline:none;border-color:var(--accent);background:#fff}
+  .cell.num input{text-align:center}
+  .cell.err input{background:var(--danger-soft)}
+  .cell.warn input{background:var(--warn-soft)}
+  .stylecell{width:78px}
+  .styletag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:600;color:#5a5e66;background:#fff}
+  .styletag .cdot{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+  .styletag.ov{border-color:var(--accent);color:var(--accent)}
+  .flagcol{width:5px}
+  .flagbar{width:3px;height:34px;border-radius:2px;margin:0 auto}
+  .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap}
+  .badge.d{color:var(--danger);background:var(--danger-soft)}
+  .badge.w{color:var(--warn);background:var(--warn-soft)}
+  .delcol{width:30px;text-align:center}
+  .del{width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;color:var(--muted2)}
+  .del:hover{color:var(--danger);background:var(--danger-soft)}
+
+  /* row style override bar */
+  .stylebar{border-top:1px solid var(--line);background:#fafafb;padding:13px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .stylebar .who{font-size:12.5px;font-weight:700}
+  .stylebar .who span{color:var(--muted);font-weight:500}
+  .stylebar .grp{display:flex;align-items:center;gap:7px}
+  .stylebar .lbl{font-size:11px;font-weight:700;color:var(--muted)}
+  .stylebar select{border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:12px;font-weight:600;background:#fff}
+  .stylebar .sw{width:22px;height:22px}
+  .stylebar .reset{margin-left:auto;font-size:11.5px;color:var(--accent);font-weight:700}
+
+  /* review grid */
+  .modal-filter{display:flex;gap:7px;padding:14px 22px 0}
+  .fbtn{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line);color:#5a5e66;background:#fff}
+  .fbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .fbtn .n{opacity:.6;margin-left:3px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .gcard{border:1px solid var(--line);border-radius:12px;padding:12px;position:relative;background:#fff}
+  .gcard.bad{border-color:var(--danger);background:var(--danger-soft)}
+  .gcard.wn{border-color:var(--warn)}
+  .gcard .mini{aspect-ratio:1;display:grid;place-items:center;margin-bottom:8px}
+  .gcard .gname{font-size:13px;font-weight:700;text-align:center}
+  .gcard .gmeta{font-size:11.5px;color:var(--muted);text-align:center;margin-top:2px}
+  .gbadge{position:absolute;top:8px;right:8px}
+
+  /* cart / size popup (per-name) */
+  .prodbox{background:#f6f7f9;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;margin-bottom:8px}
+  .prodbox .pn{font-size:14px;font-weight:700}
+  .prodbox .pc{font-size:12px;color:var(--muted);margin-top:3px}
+  .prodbox .pr{margin-left:auto;text-align:right}
+  .prodbox .pr .now{font-size:15px;font-weight:800}
+  .prodbox .pr .was{font-size:12px;color:var(--muted2);text-decoration:line-through}
+  .sizehdr{font-size:14px;font-weight:700;margin:18px 0 4px;display:flex;align-items:center;gap:8px}
+  .sizehdr .mini2{font-size:11.5px;color:var(--muted);font-weight:500}
+  .namerow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line2)}
+  .namerow .who{display:flex;align-items:center;gap:9px;min-width:0}
+  .namerow .av{width:30px;height:30px;border-radius:8px;background:#eef0f2;display:grid;place-items:center;font-size:12px;font-weight:800;color:#5a5e66;flex:none}
+  .namerow .nm{font-size:13.5px;font-weight:700}
+  .namerow .nn{font-size:11.5px;color:var(--muted)}
+  .namerow .ssel{margin-left:auto}
+  .namerow .ssel select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:600;background:#fff;min-width:78px}
+  .namerow .ssel select.warn{border-color:var(--warn);background:var(--warn-soft)}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .stepper button{width:30px;height:32px;display:grid;place-items:center;color:#5a5e66;font-size:16px}
+  .stepper button:hover{background:#f2f3f5}
+  .stepper .q{width:34px;text-align:center;font-size:13px;font-weight:700}
+  .cartfoot{padding:16px 22px;border-top:1px solid var(--line)}
+  .cartfoot .tot{display:flex;align-items:center;margin-bottom:12px}
+  .cartfoot .tot .l{font-size:14px;font-weight:700}
+  .cartfoot .tot .v{margin-left:auto;font-size:18px;font-weight:800}
+  .cartbtn{width:100%;padding:15px;border-radius:12px;background:var(--ink);color:#fff;font-size:15px;font-weight:700}
+  .cartbtn:disabled{background:#c9ccd1;cursor:not-allowed}
+
+  .alert{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border-radius:var(--r-sm);font-size:12px;line-height:1.5;margin-top:12px}
+  .alert.w{background:var(--warn-soft);color:#8a5a06}
+  .alert.i{background:var(--accent-soft);color:#274a9e}
+  .alert svg{flex:none;width:15px;height:15px;margin-top:1px}
+
+  .render-card{background:#fff;border-radius:18px;width:min(440px,92vw);padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.28);text-align:center}
+  .render-card h3{font-size:17px;font-weight:700;margin-bottom:6px}
+  .render-card p{font-size:13px;color:var(--muted);line-height:1.55}
+  .bar{height:9px;border-radius:999px;background:#eef0f2;margin:20px 0 10px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#5b8bff);border-radius:999px;transition:width .25s}
+  .rstat{display:flex;justify-content:space-between;font-size:12px;color:#5a5e66;font-weight:600}
+  .render-card .done{display:none;color:var(--ok);font-weight:700;font-size:14px;margin-top:6px}
+  .render-card .gobtn{margin-top:18px;width:100%;justify-content:center;padding:12px;display:none}
+
+  /* envelope */
+  .seg{display:flex;background:#f2f3f5;border-radius:9px;padding:3px;margin-bottom:14px}
+  .seg button{flex:1;padding:8px;border-radius:7px;font-size:12.5px;font-weight:600;color:#5a5e66}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .fldlabel{font-size:12px;font-weight:600;color:#4a4e56;margin:12px 0 6px}
+  .tin{width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-size:13px}
+  .tin:focus{outline:none;border-color:var(--accent)}
+  .envprev{background:#fff;border:1px solid var(--line);border-radius:12px;width:420px;aspect-ratio:1.55;position:relative;filter:drop-shadow(0 10px 28px rgba(0,0,0,.06));overflow:hidden}
+  .env-logo{position:absolute;left:34px;top:30px;font-weight:800;font-size:17px;line-height:1.05;color:#1d2330;z-index:2}
+  .env-logo small{display:block;font-size:8px;letter-spacing:.18em;color:#8a8d93;font-weight:600;margin-top:3px}
+  .env-info{position:absolute;left:34px;top:80px;font-size:8.5px;color:#5a5e66;line-height:1.7;z-index:2}
+  .zipbox{position:absolute;display:flex;gap:4px;z-index:2}
+  .zipbox .d{width:22px;height:26px;border:1.5px solid #cfd3da;border-radius:3px;display:grid;place-items:center;font-weight:800;font-size:14px;color:#1d2330}
+  .env-var{position:absolute;border:1.5px dashed var(--accent);border-radius:4px;padding:4px 8px;font-weight:800;color:#1d2330;font-size:13px;z-index:2}
+  .env-deco1{position:absolute;right:0;top:0;width:120px;height:120px;background:#1f3b66;border-radius:0 0 0 60px;opacity:.92}
+  .env-deco2{position:absolute;left:60px;bottom:0;width:130px;height:70px;background:#cfd3da;clip-path:polygon(0 100%,50% 0,100% 100%)}
+
+  @media(max-width:1080px){.thumbs{display:none}.panel{width:308px}}
+</style>
+</head>
+<body>
+  <div class="harness">
+    <span class="tag">PROTOTYPE</span>
+    <div class="cases">
+      <button class="case-btn on" data-case="sports" onclick="setCase('sports')">스포츠웨어 단체복</button>
+      <button class="case-btn" data-case="envelope" onclick="setCase('envelope')">봉투 · 우편번호</button>
+    </div>
+    <span class="note">명단=레이어 팝업 · 사이즈/수량=장바구니 팝업(인원별) · 현 편집기 UI 기준</span>
+  </div>
+
+  <div class="editor" id="editor"></div>
+
+  <!-- 명단 입력 modal -->
+  <div class="overlay" id="rosterOverlay">
+    <div class="modal">
+      <div class="modal-head"><h3>명단 입력</h3><span class="cnt" id="rosCnt"></span><button class="x" onclick="closeRoster()">✕</button></div>
+      <div class="modal-sub">인쇄될 <b>이름·등번호</b>와 <b>인원별 사이즈·수량</b>을 입력해요. 폰트·색상은 전원 공통으로 적용돼요.</div>
+      <div class="modal-body">
+        <div class="tbl-tools">
+          <button class="btn" onclick="addRow()">+ 행 추가</button>
+          <button class="btn" onclick="pasteDemo()">⎘ 엑셀 붙여넣기</button>
+        </div>
+        <table class="vt"><thead><tr id="rosHead"></tr></thead>
+        <tbody id="rosBody"></tbody></table>
+      </div>
+      <div class="modal-foot">
+        <span class="lg" id="rosLog"></span><span class="sp"></span>
+        <button class="btn" onclick="openReview()">전체 검수</button>
+        <button class="btn primary" onclick="closeRoster()">완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 검수 modal -->
+  <div class="overlay" id="reviewOverlay">
+    <div class="modal">
+      <div class="modal-head"><h3>전체 검수</h3><span class="cnt" id="revCount"></span><button class="x" onclick="closeReview()">✕</button></div>
+      <div class="modal-filter" id="revFilter"></div>
+      <div class="modal-body"><div class="devnote2">⚠ 개발 가능 여부 / 속도 및 이슈 체크 필요</div><div class="grid" id="revGrid"></div></div>
+      <div class="modal-foot"><span class="lg" id="revLog"></span><span class="sp"></span><button class="btn" onclick="closeReview()">계속 편집</button></div>
+    </div>
+  </div>
+
+  <!-- 사이즈/수량 (장바구니) modal -->
+  <div class="overlay" id="cartOverlay">
+    <div class="modal narrow">
+      <div class="modal-head"><h3 id="cartTitle">사이즈 및 수량 선택</h3><button class="x" onclick="closeCart()">✕</button></div>
+      <div class="modal-body" id="cartBody"></div>
+      <div class="cartfoot">
+        <div class="tot"><span class="l" id="cartCnt">합계 (총 0건)</span><span class="v" id="cartSum">0원</span></div>
+        <button class="cartbtn" id="cartBtn" onclick="startRender()">장바구니 담기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- render modal -->
+  <div class="overlay" id="renderOverlay">
+    <div class="render-card">
+      <h3 id="rTitle">개인화 항목 생성 중</h3>
+      <p id="rDesc">행마다 텍스트를 벡터로 변환해 인쇄 파일을 만들고 있어요.</p>
+      <div class="bar"><i id="rBar"></i></div>
+      <div class="rstat"><span id="rPct">0%</span><span id="rNum"></span></div>
+      <div class="done" id="rDone">✓ 생성 완료 — 주문서로 이동할 수 있어요</div>
+      <button class="btn accent gobtn" id="rGo" onclick="closeRender()">주문서로 이동</button>
+    </div>
+  </div>
+
+<script>
+const I={
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 015 5 5 5 0 01-5 5H9"/></svg>',
+  redo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 00-5 5 5 5 0 005 5h6"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>',
+  text:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+  color:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3s6 6.5 6 11a6 6 0 11-12 0c0-4.5 6-11 6-11z"/></svg>',
+  vdata:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16M3 14h18"/></svg>',
+  clip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z"/></svg>',
+  logo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>',
+  photo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="M21 16l-5-5L5 20"/></svg>',
+  bg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4h18v6H3zM3 14h18v6H3z"/></svg>',
+  tpl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  table:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>',
+};
+
+const SPORTS={
+  soccer:{label:'축구',back:{name:1,num:1},front:{num:'small'},desc:'등 큰 번호·가슴 작은 번호·등 상단 이름'},
+  basket:{label:'농구',back:{name:1,num:1},front:{num:'small'},desc:'등 큰 번호·앞 번호·등 상단 이름'},
+  running:{label:'러닝',back:{name:0,num:0},front:{name:'big'},desc:'가슴 이름 중심'},
+  volley:{label:'배구',back:{name:1,num:1},front:{num:'small'},desc:'등 번호·등 상단 이름'},
+  baseball:{label:'야구',back:{name:1,num:1},front:{num:'small'},desc:'등 상단 이름·등 번호'},
+  general:{label:'일반',back:{name:1,num:1},front:{num:'small'},desc:'이름·번호 자유'},
+};
+const DESIGNS=[
+  {id:'sc1', sport:'soccer', name:'클래식 스트라이프', body:'#1f3b66', collar:'#ffffff', stripe:'#2f6bff', ink:'#ffffff'},
+  {id:'sc2', sport:'soccer', name:'솔리드 레드', body:'#c62b30', collar:'#1d2330', ink:'#ffffff'},
+  {id:'bk1', sport:'basket', name:'블랙 탱크', body:'#20242c', collar:'#d4a017', ink:'#d4a017'},
+  {id:'bk2', sport:'basket', name:'로열 퍼플', body:'#5b3a9b', collar:'#ffffff', ink:'#ffffff'},
+  {id:'rn1', sport:'running', name:'미니멀 화이트', body:'#ffffff', collar:'#e5484d', ink:'#1d2330'},
+  {id:'rn2', sport:'running', name:'선셋', body:'#ff7a3d', collar:'#ffffff', ink:'#ffffff'},
+  {id:'vb1', sport:'volley', name:'오션 블루', body:'#2f6bff', collar:'#ffffff', ink:'#ffffff'},
+  {id:'bb1', sport:'baseball', name:'핀스트라이프', body:'#fbfbfb', collar:'#1f3b66', stripe:'#c9d2e0', ink:'#1f3b66'},
+  {id:'gn1', sport:'general', name:'베이직 화이트', body:'#ffffff', collar:'#c9ccd2', ink:'#1d2330'},
+  {id:'gn2', sport:'general', name:'베이직 블랙', body:'#20242c', collar:'#4a4e56', ink:'#ffffff'},
+];
+function design(){return DESIGNS.find(d=>d.id===state.design)||DESIGNS[0];}
+const SIZES=['XXS','XS','S','M','L','XL','2XL'];
+const FONTS={'Archivo Black':"'Archivo Black',sans-serif",'Bebas Neue':"'Bebas Neue',sans-serif",'Anton':"'Anton',sans-serif",'Montserrat':"'Montserrat',sans-serif",'나눔고딕 Bold':"Pretendard,sans-serif"};
+const COLORS=[['#1d2330','블랙'],['#ffffff','화이트'],['#e5484d','레드'],['#2f6bff','블루'],['#1f3b66','네이비'],['#d4a017','골드'],['#16a34a','그린']];
+const UNIT=19750;
+
+const state={
+  view:'sports', sport:'soccer', design:'sc1', rail:'vdata', tplFilter:'all', side:'back', sel:0,
+  common:{font:'Archivo Black', color:'#1d2330'},
+  rows:[
+    {name:'김민준',num:'7',size:'L',qty:1,font:null,color:null},
+    {name:'이서연',num:'10',size:'M',qty:1,font:null,color:null},
+    {name:'박도윤',num:'4',size:'XL',qty:1,font:null,color:null},
+    {name:'ALEXANDER',num:'9',size:'L',qty:1,font:null,color:null},
+    {name:'정하준',num:'7',size:'M',qty:1,font:null,color:null},
+    {name:'강서아',num:'3',size:'',qty:1,font:null,color:null},
+    {name:'조은우',num:'5',size:'L',qty:2,font:null,color:null},
+  ],
+  styleSel:0, slotPos:{back:{},front:{}}, fields:{name:true,num:true},
+  envMode:'serial', envStart:'00000001', envQty:500, revFilter:'all',
+};
+
+function effFont(r){return r.font||state.common.font;}
+function effColor(r){return r.color||state.common.color;}
+function fontCss(name){return FONTS[name]||'Pretendard,sans-serif';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function visLen(s){let n=0;for(const c of s)n+=/[\uac00-\ud7a3]/.test(c)?1:0.55;return n;}
+function rowFlags(r,i){const f=[];const dup=state.rows.some((o,j)=>j!==i&&o.num&&o.num===r.num);
+  if(nameOn()){if(!r.name)f.push({k:'name',t:'이름 없음',lv:'d'});else if(visLen(r.name)>5)f.push({k:'name',t:'이름 자동 축소',lv:'w'});}
+  if(numOn()){if(!r.num)f.push({k:'num',t:'번호 없음',lv:'d'});else if(dup)f.push({k:'num',t:'번호 중복',lv:'w'});}
+  if(!r.size)f.push({k:'size',t:'사이즈 미선택',lv:'d'});
+  return f;}
+function rowLevel(r,i){const f=rowFlags(r,i);return f.some(x=>x.lv==='d')?'d':f.some(x=>x.lv==='w')?'w':'ok';}
+function counts(){let ok=0,w=0,d=0;state.rows.forEach((r,i)=>{const l=rowLevel(r,i);l==='d'?d++:l==='w'?w++:ok++;});return{ok,w,d};}
+function totalQty(){return state.rows.reduce((s,r)=>s+(+r.qty||0),0);}
+function sizeMissing(){return state.rows.filter(r=>!r.size).length;}
+
+/* ---- shell ---- */
+function setCase(c){state.view=c;document.querySelectorAll('.case-btn').forEach(b=>b.classList.toggle('on',b.dataset.case===c));render();}
+function render(){document.getElementById('editor').innerHTML=state.view==='sports'?sportsEditor():envEditor();if(state.view==='sports')bindDrag();}
+function railHTML(items,active){return `<div class="rail">${items.map(it=>`<div class="item ${it.k===active?'on':''}"><div class="glyph">${I[it.i]}</div><span>${it.t}</span></div>`).join('')}</div>`;}
+function topbar(cls,label,icon){return `<div class="topbar"><button class="ic">${I.back}</button><button class="ic">${I.list}</button><button class="ic">${I.undo}</button><button class="ic">${I.redo}</button><span class="crumb">${state.view==='sports'?'스포츠웨어 · 라운드 반팔 / 직접 디자인 하기':'봉투, 일반형 / 직접 디자인 하기'}</span><span class="spacer"></span><button class="save ${cls}" ${state.view==='sports'?'onclick="openCart()"':''}>${icon} ${label}</button></div>`;}
+
+/* ---- sports editor ---- */
+function sportsEditor(){
+  const railItems=[{k:'upload',i:'upload',t:'업로드'},{k:'template',i:'tpl',t:'템플릿'},{k:'text',i:'text',t:'텍스트'},{k:'color',i:'color',t:'제품 색상'},{k:'vdata',i:'vdata',t:'가변 데이터'}];
+  const rail=`<div class="rail">${railItems.map(it=>`<div class="item ${it.k===state.rail?'on':''}" onclick="setRail('${it.k}')"><div class="glyph">${I[it.i]}</div><span>${it.t}</span></div>`).join('')}</div>`;
+  const isTpl=state.rail==='template';
+  const head=isTpl
+    ? `<div class="panel-head"><h2>${I.tpl} 템플릿</h2><div class="sub">종목별 디자인을 고르면 캔버스가 바뀌고, 입력한 명단(이름·번호)은 그대로 유지돼요.</div></div>`
+    : `<div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">1개 디자인에 인원별 이름·등번호를 넣어 한 번에 제작해요. 한 명이 한 벌이 됩니다.</div></div>`;
+  return topbar('dark','장바구니',I.cart)+`<div class="body">${rail}
+    <div class="panel">
+      ${head}
+      <div class="panel-body">${isTpl?templatePanel():sportsPanel()}</div>
+    </div>
+    ${stageSports()}${thumbs()}</div>`;
+}
+function setRail(k){state.rail=k;render();}
+function setTplFilter(k){state.tplFilter=k;render();}
+function applyDesign(id){
+  const d=DESIGNS.find(x=>x.id===id);if(!d)return;
+  state.design=id; state.sport=d.sport;
+  state.slotPos={back:{},front:{}};                          // D-4: 위치 새 템플릿 기본값으로 리셋
+  state.common={font:state.common.font, color:d.ink||'#1d2330'}; // D-4: 색상 새 템플릿 기본값
+  state.rows.forEach(r=>{r.font=null;r.color=null;});         // 공통 리셋 시 행별 override도 리셋(엣지 정책)
+  render();                                                   // rows(이름·번호)·fields는 유지 → 데이터 승계
+}
+function sampleMark(d){const sp=SPORTS[d.sport];const ink=d.ink||'#1d2330';
+  if(sp.back.num)return `<text x="36" y="47" text-anchor="middle" font-size="20" font-weight="900" fill="${ink}">10</text>`;
+  if(sp.front.name==='big')return `<text x="36" y="42" text-anchor="middle" font-size="10" font-weight="800" fill="${ink}">NAME</text>`;
+  return '';}
+function designThumb(d){const collar=d.collar||'#dcdde0';
+  const stripe=d.stripe?`<path d="M20 26 h32 M20 36 h32 M20 46 h32" stroke="${d.stripe}" stroke-width="2.6" opacity=".8"/>`:'';
+  return `<svg width="64" height="60" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="${d.body}" stroke="#d0d2d6" stroke-width="1.5"/>${stripe}<path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="${collar}" stroke-width="2.2"/>${sampleMark(d)}</svg>`;}
+function templatePanel(){
+  const keys=Object.keys(SPORTS);
+  const filter=`<button class="chip ${state.tplFilter==='all'?'on':''}" onclick="setTplFilter('all')">전체</button>`+keys.map(k=>`<button class="chip ${state.tplFilter===k?'on':''}" onclick="setTplFilter('${k}')">${SPORTS[k].label}</button>`).join('');
+  const list=DESIGNS.filter(d=>state.tplFilter==='all'||d.sport===state.tplFilter);
+  const cards=list.map(d=>`<button class="dcard ${d.id===state.design?'on':''}" onclick="applyDesign('${d.id}')"><div class="dthumb">${designThumb(d)}</div><div class="dmeta"><span class="dn">${d.name}</span><span class="dsport">${SPORTS[d.sport].label}</span></div>${d.id===state.design?'<span class="dcur">적용됨</span>':''}</button>`).join('');
+  return `
+  <div class="seclabel"><span class="step">1</span> 종목</div>
+  <div class="chips">${filter}</div>
+  <div class="seclabel" style="margin-top:16px"><span class="step">2</span> 디자인 <span style="font-weight:500;color:var(--muted);font-size:12px;margin-left:5px">${list.length}종</span></div>
+  <div class="dgrid">${cards}</div>
+  <div class="hint" style="margin-top:12px">디자인을 바꿔도 <b>명단 데이터(이름·번호)는 유지</b>돼요. 새 디자인에 없는 항목(예: 등번호)은 <b>숨겨지고 데이터는 보존</b>되며, 위치·색은 새 디자인 기본값으로 초기화됩니다.</div>`;
+}
+function sportsPanel(){
+  const sp=SPORTS[state.sport];const c=counts();
+  const locName=[],locNum=[];
+  if(sp.back.name)locName.push('등 상단'); if(sp.front.name==='big')locName.push('가슴(大)');
+  if(sp.back.num)locNum.push('등 중앙(大)'); if(sp.front.num==='small')locNum.push('가슴(小)');
+  const moved=Object.keys(state.slotPos.back).length||Object.keys(state.slotPos.front).length;
+  const tog=(f,label,locs)=>`<label class="ftoggle ${state.fields[f]?'':'off'}"><input type="checkbox" ${state.fields[f]?'checked':''} onclick="event.stopPropagation()" onchange="toggleField('${f}')">${label}<span class="loc">${state.fields[f]?locs.join(' · '):'제외됨'}</span></label>`;
+  return `
+  <div class="seclabel"><span class="step">1</span> 가변 필드</div>
+  <div class="curtpl">
+    <div class="ct-thumb">${designThumb(design())}</div>
+    <div class="ct-meta"><span class="ct-sport">${sp.label}</span><span class="ct-name">${design().name}</span></div>
+    <button class="ct-change" onclick="setRail('template')">디자인 변경</button>
+  </div>
+  <div class="hint" style="margin:10px 0 9px">${sp.label} 디자인 기본 필드예요. 체크를 풀면 인쇄·명단에서 빠집니다. (최소 1개 유지)</div>
+  ${nameAvail()?tog('name','이름 / 닉네임',locName):''}
+  ${numAvail()?tog('num','등번호',locNum):''}
+  <div class="movehint" style="border-top:none;padding-top:2px;margin-top:4px">캔버스에서 슬롯을 끌어 위치를 옮길 수 있어요.${moved?` <a onclick="resetPos()">기본값으로 되돌리기</a>`:''}</div>
+
+  <div class="seclabel"><span class="step">2</span> 공통 스타일 · 전원 기본값</div>
+  <div class="selectbox"><select onchange="setCommon('font',this.value)">${Object.keys(FONTS).map(f=>`<option ${f===state.common.font?'selected':''} value="${f}">${f}</option>`).join('')}</select></div>
+  <div class="swatches">${COLORS.map(c2=>`<div class="sw ${c2[0]===state.common.color?'on':''}" title="${c2[1]}" style="background:${c2[0]}" onclick="setCommon('color','${c2[0]}')"></div>`).join('')}</div>
+  <div class="hint">폰트·색·위치는 종목 템플릿 기본값으로 제공돼요. 여기서 전원 공통으로 바꾸거나, 명단에서 <b>행별로 따로</b> 바꿀 수 있어요.</div>
+
+  <div class="seclabel"><span class="step">3</span> 명단</div>
+  <button class="bigbtn" onclick="openRoster()">
+    <span class="bi">${I.table}</span>
+    <span><span class="bt">명단 입력 (${state.rows.length}명)</span><span class="bs">이름·등번호·사이즈·수량 · 엑셀 붙여넣기</span></span>
+    <span class="arr">›</span>
+  </button>
+  <div class="statusline" onclick="openReview()">${c.d?`<span class="tag2" style="color:var(--danger)">●</span> 오류 ${c.d}건 — 검수 필요`:c.w?`<span class="tag2" style="color:var(--warn)">●</span> 확인 ${c.w}건`:`<span class="tag2" style="color:var(--ok)">●</span> 명단 이상 없음`}<span class="go">검수 보기 ›</span></div>
+  <div class="hint" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line2)">이름·등번호와 <b>사이즈·수량</b>을 명단에서 인원별로 입력해요. 장바구니에서는 총 수량·금액만 확인합니다.</div>`;
+}
+
+/* sports canvas */
+function stageSports(){
+  const r=state.rows[state.sel]||{name:'',num:''};const sp=SPORTS[state.sport];
+  const d=design();const collar=d.collar||'#e4e5e8';
+  const stripe=d.stripe?`<path d="M120 152 H310 M120 178 H310 M120 204 H310" stroke="${d.stripe}" stroke-width="9" opacity=".85"/>`:'';
+  const tee=`<svg class="tee" width="430" height="400" viewBox="0 0 430 400"><path d="M150 36 L96 60 L34 116 L78 168 L120 140 L120 372 Q120 380 128 380 L302 380 Q310 380 310 372 L310 140 L352 168 L396 116 L334 60 L280 36 Q272 74 215 74 Q158 74 150 36 Z" fill="${d.body}" stroke="#d7d8dc" stroke-width="2" stroke-linejoin="round"/>${stripe}<path d="M150 36 Q158 74 215 74 Q272 74 280 36" fill="none" stroke="${collar}" stroke-width="4"/></svg>`;
+  const ff=fontCss(effFont(r)), col=effColor(r), longName=visLen(r.name||'')>5;
+  const colStyle=col==='#ffffff'?'color:#fff;-webkit-text-stroke:1px #1d2330':'color:'+col;
+  let z='';
+  if(state.side==='back'){
+    if(sp.back.name&&state.fields.name){const[px,py]=gpos('back','name',135,118);z+=`<div class="printzone" data-slot="name" style="width:160px;height:34px;left:${px}px;top:${py}px"><span class="zonetag">이름</span><span class="pname" style="font-family:${ff};${colStyle};font-size:${longName?15:21}px">${esc(r.name)||'NAME'}</span></div>`;}
+    if(sp.back.num&&state.fields.num){const[px,py]=gpos('back','num',155,165);z+=`<div class="printzone" data-slot="num" style="width:120px;height:108px;left:${px}px;top:${py}px"><span class="zonetag">등번호</span><span class="pnum" style="font-family:${ff};${colStyle};font-size:84px">${esc(r.num)||'00'}</span></div>`;}
+  }else{
+    if(sp.front.num==='small'&&state.fields.num){const[px,py]=gpos('front','num',238,150);z+=`<div class="printzone" data-slot="num" style="width:56px;height:56px;left:${px}px;top:${py}px"><span class="zonetag">번호</span><span class="pnum" style="font-family:${ff};${colStyle};font-size:36px">${esc(r.num)||'00'}</span></div>`;}
+    if(sp.front.name==='big'&&state.fields.name){const[px,py]=gpos('front','name',125,175);z+=`<div class="printzone" data-slot="name" style="width:180px;height:42px;left:${px}px;top:${py}px"><span class="zonetag">이름</span><span class="pname" style="font-family:${ff};${colStyle};font-size:${longName?19:26}px">${esc(r.name)||'NAME'}</span></div>`;}
+  }
+  if(!z)z=`<div class="printzone" style="width:160px;height:36px;left:135px;top:170px;opacity:.55;cursor:default"><span class="zonetag">${state.side==='back'?'뒷면':'앞면'}</span><span class="pname" style="font-size:13px;color:#8a8d93">이 면 인쇄 없음</span></div>`;
+  const lbl=[nameOn()?`<b>${esc(r.name)||'(이름)'}</b>`:'',numOn()?`${esc(r.num)||'00'}번`:''].filter(Boolean).join(' · ')||'(필드 없음)';
+  return `<div class="stage"><div class="canvaswrap">${tee}${z}</div>
+    <div class="nowsel"><span class="liveflag">실시간</span> ${state.sel+1}번 · ${lbl}</div>
+    <div class="zoombar"><button>−</button><button>+</button><button>⤢</button></div></div>`;
+}
+function thumbs(){return `<div class="thumbs">
+  <div class="thumb ${state.side==='front'?'on':''}" onclick="setSide('front')"><div class="frame">${miniTee('front')}</div><div class="cap">앞면</div></div>
+  <div class="thumb ${state.side==='back'?'on':''}" onclick="setSide('back')"><div class="frame">${miniTee('back')}</div><div class="cap">뒷면</div></div></div>`;}
+function miniTee(side){const r=state.rows[state.sel]||{name:'',num:''};const sp=SPORTS[state.sport];const d=design();const col=effColor(r);const fc=col==='#ffffff'?'#e9eaec':col;let inner='';
+  if(side==='back'){if(sp.back.num&&state.fields.num)inner=`<text x="36" y="44" text-anchor="middle" font-size="22" font-weight="900" fill="${fc}">${esc(r.num)||'00'}</text>`;}
+  else{if(sp.front.num==='small'&&state.fields.num)inner=`<text x="48" y="30" text-anchor="middle" font-size="11" font-weight="900" fill="${fc}">${esc(r.num)||'00'}</text>`;}
+  const collar=d.collar||'#dcdde0';
+  return `<svg width="72" height="68" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="${d.body}" stroke="#d0d2d6" stroke-width="1.5"/><path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="${collar}" stroke-width="1.8"/>${inner}</svg>`;}
+
+/* ---- roster modal ---- */
+function openRoster(){state.styleSel=Math.min(state.styleSel,state.rows.length-1);renderRoster();document.getElementById('rosterOverlay').classList.add('show');}
+function closeRoster(){document.getElementById('rosterOverlay').classList.remove('show');render();}
+function renderRoster(){
+  document.getElementById('rosCnt').textContent=`${state.rows.length}명`;
+  let th='<th></th><th></th>';if(nameOn())th+='<th>이름 / 닉네임</th>';if(numOn())th+='<th style="text-align:center">등번호</th>';th+='<th style="text-align:center">사이즈</th><th style="text-align:center">수량</th><th></th>';
+  document.getElementById('rosHead').innerHTML=th;
+  document.getElementById('rosBody').innerHTML=state.rows.map((r,i)=>rosterRow(r,i)).join('');
+  const c=counts();
+  document.getElementById('rosLog').innerHTML=c.d?`<b style="color:var(--danger)">오류 ${c.d}건</b>`:c.w?`<b style="color:var(--warn)">확인 ${c.w}건</b>`:`<b style="color:var(--ok)">이상 없음</b>`;
+}
+function rosterRow(r,i){
+  const f=rowFlags(r,i);const fl=k=>f.find(x=>x.k===k);const lv=rowLevel(r,i);
+  const bar=lv==='d'?'var(--danger)':lv==='w'?'var(--warn)':'transparent';
+  const cls=k=>{const x=fl(k);return x?(x.lv==='d'?'err':'warn'):'';};
+  let cells='';
+  if(nameOn())cells+=`<td><div class="cell ${cls('name')}"><input value="${esc(r.name)}" placeholder="이름" oninput="upd(${i},'name',this.value)" onclick="event.stopPropagation()"></div></td>`;
+  if(numOn())cells+=`<td><div class="cell num ${cls('num')}"><input value="${esc(r.num)}" placeholder="00" maxlength="3" inputmode="numeric" oninput="updNum(${i},this.value)" onclick="event.stopPropagation()"></div></td>`;
+  cells+=`<td class="szcell"><select class="rsz ${!r.size?'miss':''}" onchange="upd(${i},'size',this.value)" onclick="event.stopPropagation()"><option value="">-</option>${SIZES.map(s=>`<option ${s===r.size?'selected':''}>${s}</option>`).join('')}</select></td>`;
+  cells+=`<td class="qtycell"><div class="rqty" onclick="event.stopPropagation()"><button onclick="stepQty(${i},-1)">−</button><span>${r.qty}</span><button onclick="stepQty(${i},1)">+</button></div></td>`;
+  return `<tr class="${i===state.sel?'sel':''}" onclick="selRow(${i})">
+    <td class="flagcol"><div class="flagbar" style="background:${bar}"></div></td>
+    <td><div class="idx">${i+1}</div></td>
+    ${cells}
+    <td class="delcol"><button class="del" onclick="delRow(${i});event.stopPropagation()">✕</button></td>
+  </tr>`;
+}
+function selRow(i){state.sel=i;renderRoster();render();}
+
+/* ---- review modal ---- */
+function openReview(){document.getElementById('revCount').textContent=`${state.rows.length}명`;renderReview();document.getElementById('reviewOverlay').classList.add('show');}
+function closeReview(){document.getElementById('reviewOverlay').classList.remove('show');}
+function setRevFilter(f){state.revFilter=f;renderReview();}
+function renderReview(){
+  const c=counts();
+  document.getElementById('revFilter').innerHTML=`<button class="fbtn ${state.revFilter==='all'?'on':''}" onclick="setRevFilter('all')">전체<span class="n">${state.rows.length}</span></button><button class="fbtn ${state.revFilter==='issue'?'on':''}" onclick="setRevFilter('issue')">확인 필요<span class="n">${c.w+c.d}</span></button><button class="fbtn ${state.revFilter==='ok'?'on':''}" onclick="setRevFilter('ok')">이상 없음<span class="n">${c.ok}</span></button>`;
+  const sp=SPORTS[state.sport];
+  document.getElementById('revGrid').innerHTML=state.rows.map((r,i)=>{
+    const lv=rowLevel(r,i),f=rowFlags(r,i);
+    if(state.revFilter==='issue'&&lv==='ok')return '';if(state.revFilter==='ok'&&lv!=='ok')return '';
+    const cc=lv==='d'?'bad':lv==='w'?'wn':'';const badge=lv==='d'?`<span class="gbadge badge d">오류</span>`:lv==='w'?`<span class="gbadge badge w">확인</span>`:'';
+    const ff=fontCss(effFont(r)),col=effColor(r),fc=col==='#ffffff'?'#cfd3da':col,longN=visLen(r.name||'')>5;
+    const mini=`<svg width="96" height="92" viewBox="0 0 96 92"><path d="M34 8 L21 14 L7 28 L18 40 L28 33 L28 84 L68 84 L68 33 L78 40 L89 28 L75 14 L62 8 Q59 19 48 19 Q37 19 34 8 Z" fill="#fff" stroke="#dcdde0" stroke-width="1.6"/>${sp.back.name&&state.fields.name?`<text x="48" y="40" text-anchor="middle" font-size="${longN?9:12}" font-weight="800" fill="${fc}" font-family="${ff}">${esc(r.name)||'NAME'}</text>`:''}${sp.back.num&&state.fields.num?`<text x="48" y="70" text-anchor="middle" font-size="30" font-weight="900" fill="${fc}" font-family="${ff}">${esc(r.num)||'00'}</text>`:''}</svg>`;
+    const gname=nameOn()?(esc(r.name)||'(이름 없음)'):(esc(r.num)||'(번호 없음)')+'번';
+    const gmeta=[nameOn()&&numOn()?(esc(r.num)||'-')+'번':'',r.size?r.size:''].filter(Boolean).join(' · ')||'-';
+    return `<div class="gcard ${cc}">${badge}<div class="mini">${mini}</div><div class="gname">${gname}</div><div class="gmeta">${gmeta}</div>${f.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:7px">${f.map(x=>`<span class="badge ${x.lv}">${x.t}</span>`).join('')}</div>`:''}</div>`;
+  }).join('')||`<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:30px">해당 항목이 없어요.</div>`;
+  document.getElementById('revLog').innerHTML=c.d?`<b style="color:var(--danger)">오류 ${c.d}건</b> · 확인 ${c.w}건`:c.w?`<b style="color:var(--warn)">확인 ${c.w}건</b>`:`<b style="color:var(--ok)">모두 이상 없음</b>`;
+}
+
+/* ---- cart (size/qty per name) modal ---- */
+function openCart(){renderCart();document.getElementById('cartOverlay').classList.add('show');}
+function closeCart(){document.getElementById('cartOverlay').classList.remove('show');}
+function renderCart(){
+  const body=document.getElementById('cartBody');
+  document.getElementById('cartTitle').textContent='장바구니 담기';
+  const c=counts();
+  const bySize={};state.rows.forEach(r=>{if(r.size)bySize[r.size]=(bySize[r.size]||0)+(+r.qty||0);});
+  const sizeChips=SIZES.filter(s=>bySize[s]).map(s=>`<span class="szpill">${s} <b>${bySize[s]}</b></span>`).join('')||'<span class="mini2" style="color:var(--danger)">사이즈 미입력</span>';
+  const list=state.rows.map((r,i)=>{
+    const init=(r.name||'?').trim().charAt(0)||'?';
+    const nm=nameOn()?(esc(r.name)||'(이름)'):(esc(r.num)||'-')+'번';
+    const nn=nameOn()&&numOn()?(esc(r.num)||'-')+'번':'';
+    const av=numOn()?(esc(r.num)||init):init;
+    const sz=r.size?`<span class="ci-sz">${r.size}</span>`:`<span class="ci-sz miss">사이즈 없음</span>`;
+    return `<div class="citem"><div class="who"><div class="av">${av}</div><div><div class="nm">${nm}</div><div class="nn">${nn}</div></div></div><div class="ci-right">${sz}<span class="ci-q">${r.qty}벌</span></div></div>`;
+  }).join('');
+  const fnames=[nameOn()?'이름':'',numOn()?'번호':''].filter(Boolean).join('·');
+  body.innerHTML=`
+    <div class="prodbox"><div><div class="pn">스포츠웨어 · 라운드 반팔 티셔츠</div><div class="pc">색상 : 멜란지 · 가변 인쇄(${fnames}) · ${design().name}</div></div>
+      <div class="pr"><div class="now">${UNIT.toLocaleString()}원</div><div class="was">31,500원</div></div></div>
+    <div class="cartsum">
+      <div class="cs-row"><span>총 인원</span><b>${state.rows.length}명</b></div>
+      <div class="cs-row"><span>총 수량</span><b>${totalQty()}벌</b></div>
+      <div class="cs-row"><span>사이즈별</span><div class="szwrap">${sizeChips}</div></div>
+    </div>
+    <div class="sizehdr">인원별 확인 <span class="mini2">사이즈·수량은 <a onclick="closeCart();openRoster()">명단</a>에서 설정</span></div>
+    <div class="clist">${list}</div>
+    ${c.d?`<div class="alert w">${I.warn}<div>명단에 확인 필요 ${c.d}건(사이즈 미선택 포함) — <a onclick="closeCart();openRoster()">명단</a>에서 수정 후 담을 수 있어요.</div></div>`:`<div class="alert i">${I.info}<div>수량·사이즈는 명단에서 관리해요. 여기서는 총 현황과 금액만 확인합니다.</div></div>`}`;
+  document.getElementById('cartCnt').textContent=`합계 (총 ${totalQty()}벌)`;
+  document.getElementById('cartSum').textContent=(UNIT*totalQty()).toLocaleString()+'원';
+  const btn=document.getElementById('cartBtn');
+  btn.disabled=c.d>0;
+  btn.textContent=c.d>0?`명단 확인 ${c.d}건 필요`:'주문하기';
+}
+function stepQty(i,d){state.rows[i].qty=Math.max(0,(+state.rows[i].qty||0)+d);
+  if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();
+  if(document.getElementById('cartOverlay').classList.contains('show'))renderCart();
+  render();}
+
+/* ---- render progress ---- */
+let rTimer=null;
+function startRender(){closeCart();runRender(state.rows.length,'명단 한 명씩 이름·번호를 벡터로 변환해 인쇄 파일을 만들고 있어요.');}
+function startRenderEnv(){runRender(state.envQty,'봉투마다 번호를 벡터로 변환해 인쇄 파일을 만들고 있어요.');}
+function runRender(total,desc){
+  const o=document.getElementById('renderOverlay');
+  document.getElementById('rDesc').textContent=desc;document.getElementById('rTitle').textContent='개인화 항목 생성 중';
+  document.getElementById('rDone').style.display='none';document.getElementById('rGo').style.display='none';
+  const bar=document.getElementById('rBar'),pct=document.getElementById('rPct'),num=document.getElementById('rNum');
+  let p=0;bar.style.width='0%';pct.textContent='0%';num.textContent=`0 / ${total}`;o.classList.add('show');clearInterval(rTimer);
+  rTimer=setInterval(()=>{p+=Math.random()*16+6;if(p>=100){p=100;clearInterval(rTimer);
+    document.getElementById('rTitle').textContent='생성 완료';document.getElementById('rDesc').textContent='편집 화면 그대로 인쇄됩니다. 동일 값은 캐시를 재사용했어요.';
+    document.getElementById('rDone').style.display='block';document.getElementById('rGo').style.display='inline-flex';}
+    bar.style.width=p+'%';pct.textContent=Math.round(p)+'%';num.textContent=`${Math.round(total*p/100)} / ${total}`;},280);
+}
+function closeRender(){clearInterval(rTimer);document.getElementById('renderOverlay').classList.remove('show');}
+
+/* ---- envelope ---- */
+function envEditor(){
+  const rail=railHTML([{k:'clip',i:'clip',t:'클립아트'},{k:'logo',i:'logo',t:'로고·QR'},{k:'text',i:'text',t:'텍스트'},{k:'photo',i:'photo',t:'사진'},{k:'bg',i:'bg',t:'배경'},{k:'tpl',i:'tpl',t:'템플릿'},{k:'vdata',i:'vdata',t:'가변 데이터'}],'vdata');
+  return topbar('blue','저장하기','')+`<div class="body">${rail}
+    <div class="panel"><div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">같은 디자인에 봉투마다 다른 번호·우편번호를 넣어요. 수량만큼 자동으로 채워집니다.</div></div>
+      <div class="panel-body">${envPanel()}</div>
+      <div class="panel-foot"><button class="btn primary" style="flex:1" onclick="startRenderEnv()">${state.envQty.toLocaleString()}건 생성</button></div></div>
+    ${stageEnv()}${envThumbs()}</div>`;
+}
+function envPanel(){const over=state.envQty>200;return `
+  <div class="seg"><button class="${state.envMode==='serial'?'on':''}" onclick="setEnvMode('serial')">일련번호</button><button class="${state.envMode==='table'?'on':''}" onclick="setEnvMode('table')">표 입력</button><button class="${state.envMode==='upload'?'on':''}" onclick="setEnvMode('upload')">엑셀 업로드</button></div>
+  ${state.envMode==='serial'?`<div class="alert i">${I.info}<div>8자리 번호가 시작값부터 순차적으로 수량만큼 자동 생성돼요.</div></div><div class="fldlabel">시작 번호</div><input class="tin" value="${state.envStart}" oninput="state.envStart=this.value;render()"><div class="fldlabel">수량</div><input class="tin" value="${state.envQty}" inputmode="numeric" oninput="state.envQty=+this.value.replace(/[^0-9]/g,'')||0;render()">`
+  :state.envMode==='table'?`<div class="hint" style="margin-top:0">봉투마다 다른 번호·우편번호를 직접 입력하거나 엑셀에서 붙여넣어요.</div><div class="tbl-tools" style="margin-top:12px"><button class="btn">+ 행 추가</button><button class="btn">⎘ 엑셀 붙여넣기</button></div><div class="alert i" style="margin-top:4px">${I.info}<div>표 입력은 스포츠웨어 명단과 <b>같은 공통 엔진</b>을 그대로 사용해요.</div></div>`
+  :`<div class="fldlabel">엑셀 파일 업로드</div><div class="tin" style="border-style:dashed;text-align:center;padding:24px;color:var(--muted)">.xlsx · .csv 끌어다 놓기</div><div class="hint">번호·우편번호 열을 봉투의 가변 슬롯에 자동 매핑합니다.</div>`}
+  <div style="margin-top:18px;font-size:12.5px"><div style="display:flex;padding:5px 0;color:#4a4e56">생성 수량<b style="margin-left:auto">${state.envQty.toLocaleString()}건</b></div><div style="display:flex;padding:5px 0;color:#4a4e56">번호 범위<b style="margin-left:auto">${state.envStart} ~ ${endSerial()}</b></div></div>
+  ${over?`<div class="alert w">${I.warn}<div>한 번에 만드는 수량이 많아요. 생성은 백그라운드 처리되고 진행률이 표시됩니다. 상한 초과 시 자동 분할 안내. <b>(상한값은 성능 기준으로 설정)</b></div></div>`:''}`;}
+function endSerial(){const n=parseInt(state.envStart,10);if(isNaN(n))return '—';return String(n+Math.max(0,state.envQty-1)).padStart(state.envStart.length,'0');}
+function stageEnv(){return `<div class="stage"><div class="envprev"><div class="env-deco1"></div><div class="env-deco2"></div>
+  <div class="env-logo">OPM<br>COMPANY<small>GLOBAL INVEST CORP</small></div>
+  <div class="env-info">서울특별시 강남구 가산디지털1로<br>대륭타운 7층 오프린트미<br><b>전화</b> 1577.4703 · <b>팩스</b> 02.3402.5566<br><b>홈페이지</b> www.ohprint.me</div>
+  <div class="zipbox" style="left:34px;top:150px">${state.envStart.slice(0,5).padEnd(5,'0').split('').map(d=>`<div class="d">${d}</div>`).join('')}</div>
+  <div class="env-var" style="left:34px;top:196px"><span class="zonetag">가변 · 번호</span>${state.envStart}</div></div>
+  <div class="nowsel"><span class="liveflag">실시간</span> 1번 봉투 = <b>${state.envStart}</b></div>
+  <div class="zoombar"><button>−</button><button>+</button><button>⤢</button></div></div>`;}
+function envThumbs(){return `<div class="thumbs"><div class="thumb on"><div class="frame"><svg width="80" height="52" viewBox="0 0 80 52"><rect x="3" y="3" width="74" height="46" rx="3" fill="#fff" stroke="#dcdde0"/><rect x="48" y="28" width="22" height="9" fill="none" stroke="#bfc3ca"/></svg></div><div class="cap">앞면</div></div><div class="thumb"><div class="frame"><svg width="80" height="52" viewBox="0 0 80 52"><rect x="3" y="3" width="74" height="46" rx="3" fill="#fbfbfc" stroke="#dcdde0"/><path d="M3 6 L40 30 L77 6" fill="none" stroke="#dcdde0"/></svg></div><div class="cap">뒷면</div></div></div>`;}
+
+/* ---- actions ---- */
+function pickSport(k){state.sport=k;state.slotPos={back:{},front:{}};render();}
+function setSide(s){state.side=s;render();}
+function gpos(side,key,dx,dy){const s=state.slotPos[side]&&state.slotPos[side][key];return s?[s.x,s.y]:[dx,dy];}
+function resetPos(){state.slotPos={back:{},front:{}};render();}
+function nameAvail(){const sp=SPORTS[state.sport];return !!(sp.back.name||sp.front.name==='big');}
+function numAvail(){const sp=SPORTS[state.sport];return !!(sp.back.num||sp.front.num==='small');}
+function nameOn(){return nameAvail()&&state.fields.name;}
+function numOn(){return numAvail()&&state.fields.num;}
+function toggleField(f){const was=state.fields[f];state.fields[f]=!was;if(!nameOn()&&!numOn()){state.fields[f]=was;render();return;}render();if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();}
+function bindDrag(){document.querySelectorAll('.printzone[data-slot]').forEach(el=>el.addEventListener('mousedown',startDrag));}
+function startDrag(e){e.preventDefault();const el=e.currentTarget;const ox=parseFloat(el.style.left),oy=parseFloat(el.style.top),sx=e.clientX,sy=e.clientY;el.classList.add('dragging');
+  function mv(ev){el.style.left=(ox+ev.clientX-sx)+'px';el.style.top=(oy+ev.clientY-sy)+'px';}
+  function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);el.classList.remove('dragging');state.slotPos[state.side][el.dataset.slot]={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};render();}
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);}
+function setCommon(k,v){state.common[k]=v;render();}
+function selStyle(i){state.styleSel=i;state.sel=i;renderRoster();}
+function setRowStyle(k,v){state.rows[state.styleSel][k]=v||null;renderRoster();}
+function resetRowStyle(){const r=state.rows[state.styleSel];r.font=null;r.color=null;renderRoster();}
+function upd(i,k,v){state.rows[i][k]=v;if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();render();}
+function updNum(i,v){state.rows[i].num=v.replace(/[^0-9]/g,'').slice(0,3);renderRoster();render();}
+function addRow(){state.rows.push({name:'',num:'',size:'',qty:1,font:null,color:null});state.styleSel=state.rows.length-1;state.sel=state.styleSel;renderRoster();}
+function delRow(i){if(state.rows.length<=1)return;state.rows.splice(i,1);state.styleSel=Math.min(state.styleSel,state.rows.length-1);state.sel=Math.min(state.sel,state.rows.length-1);renderRoster();render();}
+function pasteDemo(){[['윤지호','8'],['임수아','6'],['한예준','2'],['오유진','1'],['신라온','12']].forEach(m=>state.rows.push({name:m[0],num:m[1],size:'',qty:1,font:null,color:null}));renderRoster();}
+function setEnvMode(m){state.envMode=m;render();}
+
+render();
+['rosterOverlay','reviewOverlay','cartOverlay','renderOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});});
+</script>
+</body>
+</html>
