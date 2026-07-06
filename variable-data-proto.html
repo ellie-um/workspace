@@ -318,6 +318,36 @@
   .ackbtn.on{background:var(--warn);color:#fff;border-color:var(--warn)}
   .phase{font-size:9px;font-weight:800;background:#3a3f4a;color:#c7ccd4;border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:1px}
 
+  /* cart page (저장 후) */
+  .cartpage{flex:1;overflow-y:auto;background:#fff}
+  .cp-inner{max-width:1120px;margin:0 auto;padding:34px 24px 60px}
+  .cp-title{text-align:center;font-size:26px;font-weight:800;margin:8px 0 6px}
+  .cp-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:32px}
+  .cp-cnt{font-size:13.5px;font-weight:700;margin-bottom:10px}
+  .cp-tools{display:flex;gap:7px;margin-bottom:14px}
+  .cp-hdr{display:grid;grid-template-columns:1fr 230px 110px 110px 130px;background:#f6f7f9;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12.5px;font-weight:700;color:#4a4e56;padding:12px 10px}
+  .cp-hdr span{text-align:center}
+  .cp-row{display:grid;grid-template-columns:1fr 230px 110px 110px 130px;padding:22px 10px;border-bottom:1px solid var(--line2);align-items:flex-start}
+  .cp-prod{display:flex;gap:14px}
+  .cp-thumb{width:112px;height:112px;background:#f5f6f8;border-radius:10px;display:grid;place-items:center;flex:none}
+  .cp-pn{font-size:12.5px;color:var(--muted)}
+  .cp-title2{font-size:15.5px;font-weight:800;margin:3px 0 7px;display:flex;align-items:center;gap:7px}
+  .cp-meta{font-size:12px;color:#5a5e66;line-height:1.7}
+  .cp-links{margin-top:9px;display:flex;gap:12px;font-size:12.5px}
+  .cp-links a{color:var(--accent);text-decoration:underline;cursor:pointer}
+  .cp-qty{display:flex;flex-direction:column;gap:7px;align-items:center;font-size:12.5px;color:#4a4e56}
+  .cp-price{text-align:center;font-size:15px;font-weight:800;color:#e5484d}
+  .cp-date{text-align:center;font-size:12.5px;color:#5a5e66}
+  .cp-acts{display:flex;flex-direction:column;gap:6px}
+  .cp-acts button{border:1px solid var(--line);border-radius:6px;padding:9px 0;font-size:12.5px;font-weight:600;background:#fff;width:100%}
+  .cp-acts .order{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .cp-acts .order:disabled{background:#c9ccd1;border-color:#c9ccd1;cursor:not-allowed}
+  .cp-note{font-size:11px;color:var(--muted);margin-top:2px;text-align:center;line-height:1.5}
+  .cp-note a{color:var(--accent);cursor:pointer;text-decoration:underline}
+  .vbadge{font-size:10px;font-weight:800;color:#274a9e;background:var(--accent-soft);padding:2px 7px;border-radius:5px}
+  .szrow{display:flex;align-items:center;gap:10px;font-size:12.5px}
+  .szrow .rqty{background:#fff}
+
   @media(max-width:1080px){.thumbs{display:none}.panel{width:308px}}
 </style>
 </head>
@@ -326,22 +356,13 @@
     <span class="tag">PROTOTYPE v2</span>
     <div class="cases">
       <button class="case-btn on" data-case="sports" onclick="setCase('sports')">스포츠웨어 단체복</button>
-      <button class="case-btn" data-case="envelope" onclick="setCase('envelope')">봉투 · 우편번호<span class="phase">PHASE 3</span></button>
+      <button class="case-btn" data-case="envelope" onclick="setCase('envelope')">봉투 · 우편번호<span class="phase">후속 상품</span></button>
+      <button class="case-btn" data-case="cartpage" onclick="setCase('cartpage')">장바구니 · 저장 후</button>
     </div>
     <span class="note">명단 팝업=이름·번호·사이즈·수량 입력 · 장바구니=집계 확인 전용 · PRD1 v2.3 기준</span>
   </div>
 
   <div class="editor" id="editor"></div>
-
-  <!-- 최초 진입: 종목 템플릿 선택 (PRD3 기능2 진입점 ①) -->
-  <div class="overlay" id="introOverlay">
-    <div class="modal narrow">
-      <div class="modal-head"><h3>종목 템플릿 선택</h3><span class="cnt">편집기 최초 진입</span></div>
-      <div class="modal-sub">종목을 고르면 이름·등번호 <b>가변 슬롯이 미리 배치된 템플릿</b>으로 시작해요. (상품 상세 → 편집기 진입 시 1회 노출)</div>
-      <div class="modal-body"><div class="dgrid" id="introGrid"></div></div>
-      <div class="modal-foot"><span class="sp"></span><button class="btn" onclick="closeIntro()">건너뛰기 (기본 템플릿)</button></div>
-    </div>
-  </div>
 
   <!-- 명단 입력 modal -->
   <div class="overlay" id="rosterOverlay">
@@ -516,7 +537,7 @@ function showToast(html){let t=document.getElementById('toast');
 
 /* ---- shell ---- */
 function setCase(c){state.view=c;document.querySelectorAll('.case-btn').forEach(b=>b.classList.toggle('on',b.dataset.case===c));render();}
-function render(){document.getElementById('editor').innerHTML=state.view==='sports'?sportsEditor():envEditor();if(state.view==='sports')bindDrag();}
+function render(){document.getElementById('editor').innerHTML=state.view==='sports'?sportsEditor():state.view==='envelope'?envEditor():cartPage();if(state.view==='sports')bindDrag();}
 function railHTML(items,active){return `<div class="rail">${items.map(it=>`<div class="item ${it.k===active?'on':''}"><div class="glyph">${I[it.i]}</div><span>${it.t}</span></div>`).join('')}</div>`;}
 function topbar(cls,label,icon){return `<div class="topbar"><button class="ic">${I.back}</button><button class="ic">${I.list}</button><button class="ic">${I.undo}</button><button class="ic">${I.redo}</button><span class="crumb">${state.view==='sports'?'스포츠웨어 · 라운드 반팔 / 직접 디자인 하기':'봉투, 일반형 / 직접 디자인 하기'}</span><span class="spacer"></span><button class="save ${cls}" ${state.view==='sports'?'onclick="openCart()"':''}>${icon} ${label}</button></div>`;}
 
@@ -645,12 +666,6 @@ function miniTee(side){const r=state.rows[state.sel]||{name:'',num:''};const sp=
   const collar=d.collar||'#dcdde0';
   return `<svg width="72" height="68" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="${d.body}" stroke="#d0d2d6" stroke-width="1.5"/><path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="${collar}" stroke-width="1.8"/>${inner}</svg>`;}
 
-/* ---- 최초 진입 종목 선택 (PRD3 진입점 ①) ---- */
-function renderIntro(){const firstByS={};DESIGNS.forEach(d=>{if(!firstByS[d.sport])firstByS[d.sport]=d;});
-  document.getElementById('introGrid').innerHTML=Object.keys(SPORTS).map(k=>{const d=firstByS[k];
-    return `<button class="dcard" onclick="pickIntro('${k}')"><div class="dthumb">${designThumb(d)}</div><div class="dmeta"><span class="dn">${SPORTS[k].label}</span><span class="dsport">${SPORTS[k].desc}</span></div>${slotBadges(d)}</button>`;}).join('');}
-function pickIntro(k){const d=DESIGNS.find(x=>x.sport===k);if(d){state.design=d.id;state.sport=k;}closeIntro();render();}
-function closeIntro(){document.getElementById('introOverlay').classList.remove('show');}
 
 /* ---- roster modal ---- */
 function openRoster(){state.styleSel=Math.min(state.styleSel,state.rows.length-1);renderRoster();document.getElementById('rosterOverlay').classList.add('show');}
@@ -803,11 +818,75 @@ function runRender(total,desc){
 }
 function closeRender(){clearInterval(rTimer);document.getElementById('renderOverlay').classList.remove('show');}
 
-/* ---- envelope (Phase 3 데모 — 공용 엔진 확장 검증용) ---- */
+/* ---- cart page (저장 후 — 어패럴 장바구니 리스트) ---- */
+function cartPage(){
+  const g=gateInfo();
+  const bySize={};state.rows.forEach(r=>{if(r.size)bySize[r.size]=(bySize[r.size]||0)+(+r.qty||0);});
+  const pills=SIZES.filter(s=>bySize[s]).map(s=>`<span class="szpill">${s} <b>${bySize[s]}</b></span>`).join('')||'<span style="color:var(--danger);font-size:12px">사이즈 미입력</span>';
+  const bigThumb=`<svg width="86" height="82" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="${design().body}" stroke="#d0d2d6" stroke-width="1.5"/><path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="${design().collar||'#dcdde0'}" stroke-width="2.2"/>${sampleMark(design())}</svg>`;
+  return `<div class="cartpage"><div class="cp-inner">
+    <div class="cp-title">장바구니</div>
+    <div class="cp-sub">내가 저장한 상품을 관리하고 주문할 수 있어요.</div>
+    <div class="cp-cnt">담은 상품 2개</div>
+    <div class="cp-tools"><button class="btn">전체 선택</button><button class="btn">선택 삭제</button><button class="btn">선택 견적서 발급</button></div>
+    <div class="cp-hdr"><span style="text-align:left;padding-left:126px">상품 정보</span><span>수량</span><span>가격</span><span>최종 편집일</span><span>비고</span></div>
+    <div class="cp-row">
+      <div class="cp-prod">
+        <div class="cp-thumb">${bigThumb}</div>
+        <div>
+          <div class="cp-pn">스포츠웨어 · 라운드 반팔 티셔츠</div>
+          <div class="cp-title2">직접 디자인 하기 ✎ <span class="vbadge">가변 ${state.rows.length}명</span></div>
+          <div class="cp-meta">색상 : 멜란지 · 가변 인쇄(${[nameOn()?'이름':'',numOn()?'번호':''].filter(Boolean).join('·')}) · ${design().name}<br>1세트 = 1주문(배치) · 행별 사이즈·수량 자동 집계</div>
+        </div>
+      </div>
+      <div class="cp-qty">
+        <div class="szwrap" style="justify-content:center;max-width:100%">${pills}</div>
+        <b>총 ${totalQty()}벌 · ${state.rows.length}명</b>
+        <div class="cp-note">명단·미리보기·검수는 <a onclick="setCase('sports')">편집하기</a>(편집기)에서<br>장바구니는 옵션·집계 확인 전용</div>
+        ${g.wAck?`<span class="badge w">⚠️ 그대로 진행 ${g.wAck}건 — 생산 전 최종 검수</span>`:''}
+      </div>
+      <div class="cp-price">${(UNIT*totalQty()).toLocaleString()}원</div>
+      <div class="cp-date">2026.07.06</div>
+      <div class="cp-acts">
+        <button class="order" onclick="startRender()">주문하기</button>
+        <button onclick="setCase('sports')">편집하기</button>
+        <button onclick="showToast('세트 전체(디자인+명단)가 새 항목으로 복제돼요. — 프로토 데모')">복사하기</button>
+        <button onclick="showToast('공유/주문 — 프로토 데모')">공유/주문</button>
+      </div>
+    </div>
+    <div class="cp-row">
+      <div class="cp-prod">
+        <div class="cp-thumb"><svg width="86" height="82" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="#ffffff" stroke="#d0d2d6" stroke-width="1.5"/><path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="#c9ccd2" stroke-width="2.2"/><text x="30" y="40" font-size="9">🧸</text></svg></div>
+        <div>
+          <div class="cp-pn">프린트스타 17수 티셔츠</div>
+          <div class="cp-title2">직접 디자인 하기 ✎</div>
+          <div class="cp-meta">색상 : 화이트</div>
+          <div class="cp-links"><a onclick="showToast('옵션 변경 — 기존 어패럴 방식(사이즈별 수량 매트릭스) 데모')">옵션 변경</a><a onclick="showToast('색상 추가 — 프로토 데모')">색상 추가</a></div>
+        </div>
+      </div>
+      <div class="cp-qty">
+        <div class="szrow"><span>사이즈</span><select class="rsz" style="width:86px"><option>추가 선택</option>${SIZES.map(x=>`<option>${x}</option>`).join('')}</select></div>
+        <div class="szrow"><b style="min-width:20px">M</b><div class="rqty"><button onclick="showToast('일반 어패럴은 장바구니에서 사이즈별 수량을 직접 변경해요 — 기존 방식')">−</button><span>1</span><button onclick="showToast('일반 어패럴은 장바구니에서 사이즈별 수량을 직접 변경해요 — 기존 방식')">+</button></div><button class="del">✕</button></div>
+        <div class="cp-note">(총 수량 : 1)</div>
+      </div>
+      <div class="cp-price">16,500원</div>
+      <div class="cp-date">2026.07.06</div>
+      <div class="cp-acts">
+        <button class="order">주문하기</button>
+        <button>편집하기</button>
+        <button>복사하기</button>
+        <button>공유/주문</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:16px;max-width:760px">가변 세트(위 행)는 <b>1세트=1주문</b>. 검수 게이트는 <b>장바구니 담기 시점에 적용</b>되므로 장바구니에는 오류·미확인 경고 상태가 존재하지 않고, ⚠️ '그대로 진행' 플래그만 표시돼요. 장바구니는 <b>옵션·집계 확인 개념</b>이라 명단·미리보기·검수 기능을 두지 않으며(편집기 소유), 수정·확인이 필요하면 편집하기로 편집기 재진입 후 재저장(게이트 재적용). 일반 어패럴(아래 행)은 기존처럼 장바구니에서 사이즈별 수량을 바로 변경합니다.</div>
+  </div></div>`;
+}
+
+/* ---- envelope (후속 상품 데모 — 공용 엔진 확장 검증용) ---- */
 function envEditor(){
   const rail=railHTML([{k:'clip',i:'clip',t:'클립아트'},{k:'logo',i:'logo',t:'로고·QR'},{k:'text',i:'text',t:'텍스트'},{k:'photo',i:'photo',t:'사진'},{k:'bg',i:'bg',t:'배경'},{k:'tpl',i:'tpl',t:'템플릿'},{k:'vdata',i:'vdata',t:'가변 데이터'}],'vdata');
   return topbar('blue','저장하기','')+`<div class="body">${rail}
-    <div class="panel"><div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">같은 디자인에 봉투마다 다른 번호·우편번호를 넣어요. 수량만큼 자동으로 채워집니다. <b>(Phase 3 범위 데모)</b></div></div>
+    <div class="panel"><div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">같은 디자인에 봉투마다 다른 번호·우편번호를 넣어요. 수량만큼 자동으로 채워집니다. <b>(후속 상품 데모)</b></div></div>
       <div class="panel-body">${envPanel()}</div>
       <div class="panel-foot"><button class="btn primary" style="flex:1" onclick="startRenderEnv()">${state.envQty.toLocaleString()}건 생성</button></div></div>
     ${stageEnv()}${envThumbs()}</div>`;
@@ -816,7 +895,7 @@ function envPanel(){const over=state.envQty>200;return `
   <div class="seg"><button class="${state.envMode==='serial'?'on':''}" onclick="setEnvMode('serial')">일련번호</button><button class="${state.envMode==='table'?'on':''}" onclick="setEnvMode('table')">표 입력</button><button class="${state.envMode==='upload'?'on':''}" onclick="setEnvMode('upload')">엑셀 업로드</button></div>
   ${state.envMode==='serial'?`<div class="alert i" style="margin-top:0">${I.info}<div>8자리 번호가 시작값부터 순차적으로 수량만큼 자동 생성돼요.</div></div><div class="fldlabel">시작 번호</div><input class="tin" value="${state.envStart}" oninput="state.envStart=this.value;render()"><div class="fldlabel">수량</div><input class="tin" value="${state.envQty}" inputmode="numeric" oninput="state.envQty=+this.value.replace(/[^0-9]/g,'')||0;render()">`
   :state.envMode==='table'?`<div class="hint" style="margin-top:0">봉투마다 다른 번호·우편번호를 직접 입력하거나 엑셀에서 붙여넣어요.</div><div class="tbl-tools" style="margin-top:12px"><button class="btn">+ 행 추가</button><button class="btn">⎘ 엑셀 붙여넣기</button></div><div class="alert i" style="margin-top:4px">${I.info}<div>표 입력은 스포츠웨어 명단과 <b>같은 공통 엔진</b>을 그대로 사용해요.</div></div>`
-  :`<div class="alert w" style="margin-top:0">${I.warn}<div><b>파일 업로드 파서는 Phase 2 범위</b>(1차는 셀 붙여넣기로 충당 — C5). 이 화면은 확장 컨셉 데모예요.</div></div><div class="fldlabel">엑셀 파일 업로드</div><div class="tin" style="border-style:dashed;text-align:center;padding:24px;color:var(--muted)">.xlsx · .csv 끌어다 놓기</div><div class="hint">번호·우편번호 열을 봉투의 가변 슬롯에 자동 매핑합니다.</div>`}
+  :`<div class="alert w" style="margin-top:0">${I.warn}<div><b>파일 업로드 파서는 후속 기능 백로그</b>(1차는 셀 붙여넣기로 충당 — C5). 이 화면은 후속 상품(봉투) 확장 컨셉 데모예요.</div></div><div class="fldlabel">엑셀 파일 업로드</div><div class="tin" style="border-style:dashed;text-align:center;padding:24px;color:var(--muted)">.xlsx · .csv 끌어다 놓기</div><div class="hint">번호·우편번호 열을 봉투의 가변 슬롯에 자동 매핑합니다.</div>`}
   <div style="margin-top:18px;font-size:12.5px"><div style="display:flex;padding:5px 0;color:#4a4e56">생성 수량<b style="margin-left:auto">${state.envQty.toLocaleString()}건</b></div><div style="display:flex;padding:5px 0;color:#4a4e56">번호 범위<b style="margin-left:auto">${state.envStart} ~ ${endSerial()}</b></div></div>
   ${over?`<div class="alert w">${I.warn}<div>한 번에 만드는 수량이 많아요. 생성은 백그라운드 처리되고 진행률이 표시됩니다. 상한 초과 시 자동 분할 안내. <b>(상한값은 성능 기준으로 설정)</b></div></div>`:''}`;}
 function endSerial(){const n=parseInt(state.envStart,10);if(isNaN(n))return '—';return String(n+Math.max(0,state.envQty-1)).padStart(state.envStart.length,'0');}
@@ -856,9 +935,7 @@ function delRow(i){if(state.rows.length<=1)return;state.rows.splice(i,1);state.s
 function setEnvMode(m){state.envMode=m;render();}
 
 render();
-renderIntro();
-document.getElementById('introOverlay').classList.add('show'); /* PRD3 진입점 ①: 최초 진입 1회 */
-['rosterOverlay','reviewOverlay','cartOverlay','renderOverlay','mapOverlay','detailOverlay','introOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});});
+['rosterOverlay','reviewOverlay','cartOverlay','renderOverlay','mapOverlay','detailOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});});
 </script>
 </body>
 </html>
