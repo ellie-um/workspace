@@ -368,7 +368,7 @@
   <div class="overlay" id="rosterOverlay">
     <div class="modal">
       <div class="modal-head"><h3>명단 입력</h3><span class="cnt" id="rosCnt"></span><button class="x" onclick="closeRoster()">✕</button></div>
-      <div class="modal-sub">인쇄될 <b>이름·등번호</b>와 <b>인원별 사이즈·수량</b>을 입력해요. 폰트·색상은 공통 기본값이 적용되고, 행을 선택해 <b>행별로 따로</b> 바꿀 수도 있어요.</div>
+      <div class="modal-sub">인쇄될 <b>이름·등번호</b>와 <b>인원별 사이즈·수량</b>을 입력해요. 폰트·색상은 전원 공통으로 적용돼요.</div>
       <div class="modal-body">
         <div id="rosLimit"></div>
         <div class="tbl-tools">
@@ -378,7 +378,6 @@
         <table class="vt"><thead><tr id="rosHead"></tr></thead>
         <tbody id="rosBody"></tbody></table>
       </div>
-      <div id="rosStyle"></div>
       <div class="modal-foot">
         <span class="lg" id="rosLog"></span><span class="sp"></span>
         <button class="btn" onclick="openReview()">전체 검수</button>
@@ -569,7 +568,6 @@ function applyDesign(id){
   state.design=id; state.sport=d.sport;
   state.slotPos={back:{},front:{}};                          // D-4 ②: 위치 새 템플릿 기본값으로 리셋
   state.common={font:state.common.font, color:d.ink||'#1d2330'}; // D-4 ②: 색상 새 템플릿 기본값
-  state.rows.forEach(r=>{r.font=null;r.color=null;});         // 공통 리셋 시 행별 override도 리셋(엣지 정책)
   render();                                                   // rows(이름·번호)·fields는 유지 → 데이터 승계
   const lost=[];
   if(prevName&&!nameAvail())lost.push('이름');
@@ -622,7 +620,7 @@ function sportsPanel(){
   <div class="seclabel"><span class="step">2</span> 공통 스타일 · 전원 기본값</div>
   <div class="selectbox"><select onchange="setCommon('font',this.value)">${Object.keys(FONTS).map(f=>`<option ${f===state.common.font?'selected':''} value="${f}">${f}</option>`).join('')}</select></div>
   <div class="swatches">${COLORS.map(c2=>`<div class="sw ${c2[0]===state.common.color?'on':''}" title="${c2[1]}" style="background:${c2[0]}" onclick="setCommon('color','${c2[0]}')"></div>`).join('')}</div>
-  <div class="hint">폰트·색·위치는 종목 템플릿 기본값으로 제공돼요. 여기서 전원 공통으로 바꾸거나, 명단에서 <b>행별로 따로</b> 바꿀 수 있어요.</div>
+  <div class="hint">폰트·색·위치는 종목 템플릿 기본값으로 제공되고, 여기서 <b>전원 공통</b>으로 변경해요. (행별 개별 변경은 제공하지 않아요)</div>
 
   <div class="seclabel"><span class="step">3</span> 명단</div>
   <button class="bigbtn" onclick="openRoster()">
@@ -652,9 +650,7 @@ function stageSports(){
     if(sp.front.name==='big'&&state.fields.name){const[px,py]=gpos('front','name',125,175);z+=`<div class="printzone" data-slot="name" style="width:180px;height:42px;left:${px}px;top:${py}px"><span class="zonetag">이름</span><span class="pname" style="font-family:${ff};${colStyle};font-size:${longName?19:26}px">${esc(r.name)||'NAME'}</span></div>`;}
   }
   if(!z)z=`<div class="printzone" style="width:160px;height:36px;left:135px;top:170px;opacity:.55;cursor:default"><span class="zonetag">${state.side==='back'?'뒷면':'앞면'}</span><span class="pname" style="font-size:13px;color:#8a8d93">이 면 인쇄 없음</span></div>`;
-  const lbl=[nameOn()?`<b>${esc(r.name)||'(이름)'}</b>`:'',numOn()?`${esc(r.num)||'00'}번`:''].filter(Boolean).join(' · ')||'(필드 없음)';
   return `<div class="stage"><div class="canvaswrap">${tee}${z}</div>
-    <div class="nowsel"><span class="liveflag">실시간</span> ${state.sel+1}번 · ${lbl}</div>
     <div class="zoombar"><button>−</button><button>+</button><button>⤢</button></div></div>`;
 }
 function thumbs(){return `<div class="thumbs">
@@ -673,20 +669,11 @@ function closeRoster(){document.getElementById('rosterOverlay').classList.remove
 function renderRoster(){
   document.getElementById('rosCnt').textContent=`${state.rows.length}명`;
   document.getElementById('rosLimit').innerHTML=state.rows.length>ROW_LIMIT_HINT?`<div class="alert w" style="margin:0 0 12px">${I.warn}<div>한 세트 인원이 많아요. <b>상한 초과 시 자동 분할 주문 안내</b>가 표시됩니다. (상한값은 성능 기준으로 P3솔루션팀이 확정 — D-2)</div></div>`:'';
-  let th='<th></th><th></th>';if(nameOn())th+='<th>이름 / 닉네임</th>';if(numOn())th+='<th style="text-align:center">등번호</th>';th+='<th style="text-align:center">사이즈</th><th style="text-align:center">수량</th><th style="text-align:center">스타일</th><th></th>';
+  let th='<th></th><th></th>';if(nameOn())th+='<th>이름 / 닉네임</th>';if(numOn())th+='<th style="text-align:center">등번호</th>';th+='<th style="text-align:center">사이즈</th><th style="text-align:center">수량</th><th></th>';
   document.getElementById('rosHead').innerHTML=th;
   document.getElementById('rosBody').innerHTML=state.rows.map((r,i)=>rosterRow(r,i)).join('');
   const g=gateInfo();
   document.getElementById('rosLog').innerHTML=g.d?`<b style="color:var(--danger)">오류 ${g.d}건</b>`:g.wOpen?`<b style="color:var(--warn)">경고 ${g.wOpen}건 — 검수에서 확인 필요</b>`:g.wAck?`<b style="color:var(--warn)">⚠️ 그대로 진행 ${g.wAck}건</b>`:`<b style="color:var(--ok)">이상 없음</b>`;
-  renderStylebar();
-}
-function renderStylebar(){
-  const i=Math.min(state.styleSel,state.rows.length-1);const sr=state.rows[i];if(!sr)return;
-  document.getElementById('rosStyle').innerHTML=`<div class="stylebar">
-    <span class="who">${esc(sr.name)||(i+1)+'번 행'} <span>행별 스타일 (2층 override)</span></span>
-    <div class="grp"><span class="lbl">폰트</span><select onchange="setRowStyle('font',this.value)"><option value="">공통 (${state.common.font})</option>${Object.keys(FONTS).map(f=>`<option ${sr.font===f?'selected':''} value="${f}">${f}</option>`).join('')}</select></div>
-    <div class="grp"><span class="lbl">색상</span>${COLORS.map(c2=>`<div class="sw ${(sr.color||'')===c2[0]?'on':''}" title="${c2[1]}" style="background:${c2[0]}" onclick="setRowStyle('color','${c2[0]}')"></div>`).join('')}</div>
-    <button class="reset" onclick="resetRowStyle()">공통으로 되돌리기</button></div>`;
 }
 function rosterRow(r,i){
   const f=rowFlags(r,i);const fl=k=>f.find(x=>x.k===k);const lv=rowLevel(r,i);
@@ -697,7 +684,6 @@ function rosterRow(r,i){
   if(numOn())cells+=`<td><div class="cell num ${cls('num')}"><input value="${esc(r.num)}" placeholder="00" maxlength="3" inputmode="numeric" oninput="updNum(${i},this.value)" onclick="event.stopPropagation()"></div></td>`;
   cells+=`<td class="szcell"><select class="rsz ${!r.size?'miss':''}" onchange="upd(${i},'size',this.value)" onclick="event.stopPropagation()"><option value="">-</option>${SIZES.map(s=>`<option ${s===r.size?'selected':''}>${s}</option>`).join('')}</select></td>`;
   cells+=`<td class="qtycell"><div class="rqty" onclick="event.stopPropagation()"><button onclick="stepQty(${i},-1)">−</button><span>${r.qty}</span><button onclick="stepQty(${i},1)">+</button></div></td>`;
-  cells+=`<td class="stylecell"><button class="styletag ${r.font||r.color?'ov':''}" onclick="selStyle(${i});event.stopPropagation()"><span class="cdot" style="background:${effColor(r)}"></span>${r.font||r.color?'개별':'공통'}</button></td>`;
   return `<tr class="${i===state.sel?'sel':''}" onclick="selRow(${i})">
     <td class="flagcol"><div class="flagbar" style="background:${bar}"></div></td>
     <td><div class="idx">${i+1}</div></td>
@@ -904,7 +890,6 @@ function stageEnv(){return `<div class="stage"><div class="envprev"><div class="
   <div class="env-info">서울특별시 강남구 가산디지털1로<br>대륭타운 7층 오프린트미<br><b>전화</b> 1577.4703 · <b>팩스</b> 02.3402.5566<br><b>홈페이지</b> www.ohprint.me</div>
   <div class="zipbox" style="left:34px;top:150px">${state.envStart.slice(0,5).padEnd(5,'0').split('').map(d=>`<div class="d">${d}</div>`).join('')}</div>
   <div class="env-var" style="left:34px;top:196px"><span class="zonetag">가변 · 번호</span>${state.envStart}</div></div>
-  <div class="nowsel"><span class="liveflag">실시간</span> 1번 봉투 = <b>${state.envStart}</b></div>
   <div class="zoombar"><button>−</button><button>+</button><button>⤢</button></div></div>`;}
 function envThumbs(){return `<div class="thumbs"><div class="thumb on"><div class="frame"><svg width="80" height="52" viewBox="0 0 80 52"><rect x="3" y="3" width="74" height="46" rx="3" fill="#fff" stroke="#dcdde0"/><rect x="48" y="28" width="22" height="9" fill="none" stroke="#bfc3ca"/></svg></div><div class="cap">앞면</div></div><div class="thumb"><div class="frame"><svg width="80" height="52" viewBox="0 0 80 52"><rect x="3" y="3" width="74" height="46" rx="3" fill="#fbfbfc" stroke="#dcdde0"/><path d="M3 6 L40 30 L77 6" fill="none" stroke="#dcdde0"/></svg></div><div class="cap">뒷면</div></div></div>`;}
 
@@ -924,9 +909,6 @@ function startDrag(e){e.preventDefault();const el=e.currentTarget;const ox=parse
   function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);el.classList.remove('dragging');state.slotPos[state.side][el.dataset.slot]={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};render();}
   document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);}
 function setCommon(k,v){state.common[k]=v;render();if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();}
-function selStyle(i){state.styleSel=i;state.sel=i;renderRoster();render();}
-function setRowStyle(k,v){state.rows[state.styleSel][k]=v||null;renderRoster();render();}
-function resetRowStyle(){const r=state.rows[state.styleSel];r.font=null;r.color=null;renderRoster();render();}
 function upd(i,k,v){state.rows[i][k]=v;if(k==='name')state.rows[i].ack=false;if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();render();}
 function updNum(i,v){state.rows[i].num=v.replace(/[^0-9]/g,'').slice(0,3);state.rows[i].ack=false;renderRoster();render();}
 function addRow(){state.rows.push({name:'',num:'',size:'',qty:1,font:null,color:null,ack:false});state.styleSel=state.rows.length-1;state.sel=state.styleSel;renderRoster();}
