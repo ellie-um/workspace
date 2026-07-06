@@ -210,7 +210,7 @@
   .cell.num input{text-align:center}
   .cell.err input{background:var(--danger-soft)}
   .cell.warn input{background:var(--warn-soft)}
-  .stylecell{width:78px}
+  .stylecell{width:78px;text-align:center}
   .styletag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:600;color:#5a5e66;background:#fff}
   .styletag .cdot{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
   .styletag.ov{border-color:var(--accent);color:var(--accent)}
@@ -219,9 +219,10 @@
   .badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap}
   .badge.d{color:var(--danger);background:var(--danger-soft)}
   .badge.w{color:var(--warn);background:var(--warn-soft)}
-  .delcol{width:30px;text-align:center}
+  .delcol{width:56px;text-align:center;white-space:nowrap}
   .del{width:22px;height:22px;border-radius:6px;display:inline-grid;place-items:center;color:var(--muted2)}
   .del:hover{color:var(--danger);background:var(--danger-soft)}
+  .del.dup:hover{color:var(--accent);background:var(--accent-soft)}
 
   /* row style override bar */
   .stylebar{border-top:1px solid var(--line);background:#fafafb;padding:13px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -239,7 +240,7 @@
   .fbtn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .fbtn .n{opacity:.6;margin-left:3px}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
-  .gcard{border:1px solid var(--line);border-radius:12px;padding:12px;position:relative;background:#fff}
+  .gcard{border:1px solid var(--line);border-radius:12px;padding:12px;position:relative;background:#fff;cursor:pointer}
   .gcard.bad{border-color:var(--danger);background:var(--danger-soft)}
   .gcard.wn{border-color:var(--warn)}
   .gcard .mini{aspect-ratio:1;display:grid;place-items:center;margin-bottom:8px}
@@ -306,27 +307,49 @@
   .env-deco1{position:absolute;right:0;top:0;width:120px;height:120px;background:#1f3b66;border-radius:0 0 0 60px;opacity:.92}
   .env-deco2{position:absolute;left:60px;bottom:0;width:130px;height:70px;background:#cfd3da;clip-path:polygon(0 100%,50% 0,100% 100%)}
 
+  /* v2 additions — 게이트·뱃지·토스트·안내 */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#15171c;color:#fff;font-size:13px;line-height:1.55;padding:12px 18px;border-radius:12px;z-index:90;opacity:0;pointer-events:none;transition:opacity .25s;max-width:min(560px,86vw);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .toast.show{opacity:1}
+  .toast b{color:#8ab0ff}
+  .dbadges{display:flex;gap:4px;margin-top:2px}
+  .dbadge{font-size:9.5px;font-weight:700;color:#274a9e;background:var(--accent-soft);border-radius:4px;padding:2px 6px}
+  .dbadge.off{color:var(--muted2);background:#f1f3f6;text-decoration:line-through}
+  .ackbtn{margin-top:8px;width:100%;padding:6px 4px;border-radius:7px;border:1px solid var(--warn);color:var(--warn);font-size:11px;font-weight:700;background:#fff}
+  .ackbtn.on{background:var(--warn);color:#fff;border-color:var(--warn)}
+  .phase{font-size:9px;font-weight:800;background:#3a3f4a;color:#c7ccd4;border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:1px}
+
   @media(max-width:1080px){.thumbs{display:none}.panel{width:308px}}
 </style>
 </head>
 <body>
   <div class="harness">
-    <span class="tag">PROTOTYPE</span>
+    <span class="tag">PROTOTYPE v2</span>
     <div class="cases">
       <button class="case-btn on" data-case="sports" onclick="setCase('sports')">스포츠웨어 단체복</button>
-      <button class="case-btn" data-case="envelope" onclick="setCase('envelope')">봉투 · 우편번호</button>
+      <button class="case-btn" data-case="envelope" onclick="setCase('envelope')">봉투 · 우편번호<span class="phase">PHASE 3</span></button>
     </div>
-    <span class="note">명단=레이어 팝업 · 사이즈/수량=장바구니 팝업(인원별) · 현 편집기 UI 기준</span>
+    <span class="note">명단 팝업=이름·번호·사이즈·수량 입력 · 장바구니=집계 확인 전용 · PRD1 v2.3 기준</span>
   </div>
 
   <div class="editor" id="editor"></div>
+
+  <!-- 최초 진입: 종목 템플릿 선택 (PRD3 기능2 진입점 ①) -->
+  <div class="overlay" id="introOverlay">
+    <div class="modal narrow">
+      <div class="modal-head"><h3>종목 템플릿 선택</h3><span class="cnt">편집기 최초 진입</span></div>
+      <div class="modal-sub">종목을 고르면 이름·등번호 <b>가변 슬롯이 미리 배치된 템플릿</b>으로 시작해요. (상품 상세 → 편집기 진입 시 1회 노출)</div>
+      <div class="modal-body"><div class="dgrid" id="introGrid"></div></div>
+      <div class="modal-foot"><span class="sp"></span><button class="btn" onclick="closeIntro()">건너뛰기 (기본 템플릿)</button></div>
+    </div>
+  </div>
 
   <!-- 명단 입력 modal -->
   <div class="overlay" id="rosterOverlay">
     <div class="modal">
       <div class="modal-head"><h3>명단 입력</h3><span class="cnt" id="rosCnt"></span><button class="x" onclick="closeRoster()">✕</button></div>
-      <div class="modal-sub">인쇄될 <b>이름·등번호</b>와 <b>인원별 사이즈·수량</b>을 입력해요. 폰트·색상은 전원 공통으로 적용돼요.</div>
+      <div class="modal-sub">인쇄될 <b>이름·등번호</b>와 <b>인원별 사이즈·수량</b>을 입력해요. 폰트·색상은 공통 기본값이 적용되고, 행을 선택해 <b>행별로 따로</b> 바꿀 수도 있어요.</div>
       <div class="modal-body">
+        <div id="rosLimit"></div>
         <div class="tbl-tools">
           <button class="btn" onclick="addRow()">+ 행 추가</button>
           <button class="btn" onclick="pasteDemo()">⎘ 엑셀 붙여넣기</button>
@@ -334,11 +357,22 @@
         <table class="vt"><thead><tr id="rosHead"></tr></thead>
         <tbody id="rosBody"></tbody></table>
       </div>
+      <div id="rosStyle"></div>
       <div class="modal-foot">
         <span class="lg" id="rosLog"></span><span class="sp"></span>
         <button class="btn" onclick="openReview()">전체 검수</button>
         <button class="btn primary" onclick="closeRoster()">완료</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 붙여넣기 열 매핑 확인 modal (T2 폴백) -->
+  <div class="overlay" id="mapOverlay">
+    <div class="modal narrow">
+      <div class="modal-head"><h3>붙여넣은 열 매핑 확인</h3><span class="cnt">5행 인식</span><button class="x" onclick="closeMap()">✕</button></div>
+      <div class="modal-sub">클립보드 데이터의 각 열이 어떤 항목인지 확인해 주세요. 헤더 행이 있으면 자동 인식하고, <b>열 수가 다르면 이 확인 단계로 폴백</b>해요.</div>
+      <div class="modal-body" id="mapBody"></div>
+      <div class="modal-foot"><span class="sp"></span><button class="btn" onclick="closeMap()">취소</button><button class="btn primary" onclick="applyPaste()">5행 추가</button></div>
     </div>
   </div>
 
@@ -352,7 +386,15 @@
     </div>
   </div>
 
-  <!-- 사이즈/수량 (장바구니) modal -->
+  <!-- 검수 개별 확대 modal (기능 4b) -->
+  <div class="overlay" id="detailOverlay">
+    <div class="modal narrow">
+      <div class="modal-head"><h3 id="detTitle"></h3><button class="x" onclick="closeDetail()">✕</button></div>
+      <div class="modal-body" id="detBody" style="text-align:center"></div>
+    </div>
+  </div>
+
+  <!-- 사이즈/수량 집계 확인 (장바구니) modal -->
   <div class="overlay" id="cartOverlay">
     <div class="modal narrow">
       <div class="modal-head"><h3 id="cartTitle">사이즈 및 수량 선택</h3><button class="x" onclick="closeCart()">✕</button></div>
@@ -399,12 +441,12 @@ const I={
 };
 
 const SPORTS={
-  soccer:{label:'축구',back:{name:1,num:1},front:{num:'small'},desc:'등 큰 번호·가슴 작은 번호·등 상단 이름'},
-  basket:{label:'농구',back:{name:1,num:1},front:{num:'small'},desc:'등 큰 번호·앞 번호·등 상단 이름'},
-  running:{label:'러닝',back:{name:0,num:0},front:{name:'big'},desc:'가슴 이름 중심'},
-  volley:{label:'배구',back:{name:1,num:1},front:{num:'small'},desc:'등 번호·등 상단 이름'},
-  baseball:{label:'야구',back:{name:1,num:1},front:{num:'small'},desc:'등 상단 이름·등 번호'},
-  general:{label:'일반',back:{name:1,num:1},front:{num:'small'},desc:'이름·번호 자유'},
+  soccer:{label:'축구',back:{name:1,num:1},front:{num:'small'},sleeve:1,desc:'등 큰 번호·가슴 작은 번호·소매·등 상단 이름'},
+  basket:{label:'농구',back:{name:1,num:1},front:{num:'small'},sleeve:0,desc:'등 큰 번호·앞 번호·등 상단 이름'},
+  running:{label:'러닝',back:{name:0,num:0},front:{name:'big'},sleeve:0,desc:'가슴 이름 중심'},
+  volley:{label:'배구',back:{name:1,num:1},front:{num:'small'},sleeve:1,desc:'등 번호·소매 번호·등 상단 이름'},
+  baseball:{label:'야구',back:{name:1,num:1},front:{num:'small'},sleeve:1,desc:'등 상단 이름·등 번호·소매'},
+  general:{label:'일반',back:{name:1,num:1},front:{num:'small'},sleeve:0,desc:'이름·번호 자유'},
 };
 const DESIGNS=[
   {id:'sc1', sport:'soccer', name:'클래식 스트라이프', body:'#1f3b66', collar:'#ffffff', stripe:'#2f6bff', ink:'#ffffff'},
@@ -423,18 +465,19 @@ const SIZES=['XXS','XS','S','M','L','XL','2XL'];
 const FONTS={'Archivo Black':"'Archivo Black',sans-serif",'Bebas Neue':"'Bebas Neue',sans-serif",'Anton':"'Anton',sans-serif",'Montserrat':"'Montserrat',sans-serif",'나눔고딕 Bold':"Pretendard,sans-serif"};
 const COLORS=[['#1d2330','블랙'],['#ffffff','화이트'],['#e5484d','레드'],['#2f6bff','블루'],['#1f3b66','네이비'],['#d4a017','골드'],['#16a34a','그린']];
 const UNIT=19750;
+const ROW_LIMIT_HINT=30; /* 상한값은 P3솔루션팀 성능 기준 확정(D-2) — 데모용 임계 */
 
 const state={
   view:'sports', sport:'soccer', design:'sc1', rail:'vdata', tplFilter:'all', side:'back', sel:0,
   common:{font:'Archivo Black', color:'#1d2330'},
   rows:[
-    {name:'김민준',num:'7',size:'L',qty:1,font:null,color:null},
-    {name:'이서연',num:'10',size:'M',qty:1,font:null,color:null},
-    {name:'박도윤',num:'4',size:'XL',qty:1,font:null,color:null},
-    {name:'ALEXANDER',num:'9',size:'L',qty:1,font:null,color:null},
-    {name:'정하준',num:'7',size:'M',qty:1,font:null,color:null},
-    {name:'강서아',num:'3',size:'',qty:1,font:null,color:null},
-    {name:'조은우',num:'5',size:'L',qty:2,font:null,color:null},
+    {name:'김민준',num:'7',size:'L',qty:1,font:null,color:null,ack:false},
+    {name:'이서연',num:'10',size:'M',qty:1,font:null,color:null,ack:false},
+    {name:'박도윤',num:'4',size:'XL',qty:1,font:null,color:null,ack:false},
+    {name:'ALEXANDER',num:'9',size:'L',qty:1,font:null,color:null,ack:false},
+    {name:'정하준',num:'7',size:'M',qty:1,font:null,color:null,ack:false},
+    {name:'강서아',num:'3',size:'',qty:1,font:null,color:null,ack:false},
+    {name:'조은우',num:'5',size:'L',qty:2,font:null,color:null,ack:false},
   ],
   styleSel:0, slotPos:{back:{},front:{}}, fields:{name:true,num:true},
   envMode:'serial', envStart:'00000001', envQty:500, revFilter:'all',
@@ -444,22 +487,43 @@ function effFont(r){return r.font||state.common.font;}
 function effColor(r){return r.color||state.common.color;}
 function fontCss(name){return FONTS[name]||'Pretendard,sans-serif';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function visLen(s){let n=0;for(const c of s)n+=/[\uac00-\ud7a3]/.test(c)?1:0.55;return n;}
+function visLen(s){let n=0;for(const c of s)n+=/[가-힣]/.test(c)?1:0.55;return n;}
+/* 글리프 미보유 검출(기능 4a) — 허용: 한글·영문·숫자·공백·기본 부호. 이 외(이모지·특수문자·제3국어)는 차단 등급 */
+const GLYPH_OK=/^[가-힣a-zA-Z0-9 \-\.\']*$/;
 function rowFlags(r,i){const f=[];const dup=state.rows.some((o,j)=>j!==i&&o.num&&o.num===r.num);
-  if(nameOn()){if(!r.name)f.push({k:'name',t:'이름 없음',lv:'d'});else if(visLen(r.name)>5)f.push({k:'name',t:'이름 자동 축소',lv:'w'});}
+  if(nameOn()){
+    if(!r.name)f.push({k:'name',t:'이름 없음',lv:'d'});
+    else{
+      if(!GLYPH_OK.test(r.name))f.push({k:'name',t:'지원하지 않는 문자',lv:'d'});
+      if(visLen(r.name)>5)f.push({k:'name',t:'이름 자동 축소',lv:'w'});
+    }
+  }
   if(numOn()){if(!r.num)f.push({k:'num',t:'번호 없음',lv:'d'});else if(dup)f.push({k:'num',t:'번호 중복',lv:'w'});}
   if(!r.size)f.push({k:'size',t:'사이즈 미선택',lv:'d'});
   return f;}
 function rowLevel(r,i){const f=rowFlags(r,i);return f.some(x=>x.lv==='d')?'d':f.some(x=>x.lv==='w')?'w':'ok';}
 function counts(){let ok=0,w=0,d=0;state.rows.forEach((r,i)=>{const l=rowLevel(r,i);l==='d'?d++:l==='w'?w++:ok++;});return{ok,w,d};}
+/* 게이트 등급표(PRD1 v2.3): 차단(d)=빈값·사이즈·글리프 / 확인 후 진행(w)=중복·이름 하한 → ack 필요 */
+function gateInfo(){let d=0,wOpen=0,wAck=0;state.rows.forEach((r,i)=>{const l=rowLevel(r,i);if(l==='d')d++;else if(l==='w'){r.ack?wAck++:wOpen++;}});return{d,wOpen,wAck};}
 function totalQty(){return state.rows.reduce((s,r)=>s+(+r.qty||0),0);}
 function sizeMissing(){return state.rows.filter(r=>!r.size).length;}
+
+/* ---- toast (교체 안내 등) ---- */
+let toastTimer=null;
+function showToast(html){let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}
+  t.innerHTML=html;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),4600);}
 
 /* ---- shell ---- */
 function setCase(c){state.view=c;document.querySelectorAll('.case-btn').forEach(b=>b.classList.toggle('on',b.dataset.case===c));render();}
 function render(){document.getElementById('editor').innerHTML=state.view==='sports'?sportsEditor():envEditor();if(state.view==='sports')bindDrag();}
 function railHTML(items,active){return `<div class="rail">${items.map(it=>`<div class="item ${it.k===active?'on':''}"><div class="glyph">${I[it.i]}</div><span>${it.t}</span></div>`).join('')}</div>`;}
 function topbar(cls,label,icon){return `<div class="topbar"><button class="ic">${I.back}</button><button class="ic">${I.list}</button><button class="ic">${I.undo}</button><button class="ic">${I.redo}</button><span class="crumb">${state.view==='sports'?'스포츠웨어 · 라운드 반팔 / 직접 디자인 하기':'봉투, 일반형 / 직접 디자인 하기'}</span><span class="spacer"></span><button class="save ${cls}" ${state.view==='sports'?'onclick="openCart()"':''}>${icon} ${label}</button></div>`;}
+
+/* ---- 슬롯 구성 뱃지 (PRD3 기능2) ---- */
+function slotBadges(d){const sp=SPORTS[d.sport];
+  const hasName=!!(sp.back.name||sp.front.name==='big'),hasNum=!!(sp.back.num||sp.front.num==='small');
+  return `<div class="dbadges"><span class="dbadge ${hasName?'':'off'}">이름</span><span class="dbadge ${hasNum?'':'off'}">번호</span></div>`;}
 
 /* ---- sports editor ---- */
 function sportsEditor(){
@@ -480,11 +544,17 @@ function setRail(k){state.rail=k;render();}
 function setTplFilter(k){state.tplFilter=k;render();}
 function applyDesign(id){
   const d=DESIGNS.find(x=>x.id===id);if(!d)return;
+  const prevName=nameOn(),prevNum=numOn();
   state.design=id; state.sport=d.sport;
-  state.slotPos={back:{},front:{}};                          // D-4: 위치 새 템플릿 기본값으로 리셋
-  state.common={font:state.common.font, color:d.ink||'#1d2330'}; // D-4: 색상 새 템플릿 기본값
+  state.slotPos={back:{},front:{}};                          // D-4 ②: 위치 새 템플릿 기본값으로 리셋
+  state.common={font:state.common.font, color:d.ink||'#1d2330'}; // D-4 ②: 색상 새 템플릿 기본값
   state.rows.forEach(r=>{r.font=null;r.color=null;});         // 공통 리셋 시 행별 override도 리셋(엣지 정책)
   render();                                                   // rows(이름·번호)·fields는 유지 → 데이터 승계
+  const lost=[];
+  if(prevName&&!nameAvail())lost.push('이름');
+  if(prevNum&&!numAvail())lost.push('등번호');
+  if(lost.length)showToast(`이 디자인에는 <b>${lost.join('·')}</b> 슬롯이 없어요. 입력한 데이터는 <b>보존</b>되며, 해당 슬롯이 있는 디자인으로 바꾸면 다시 표시됩니다. (D-4 ①)`);
+  else showToast(`디자인이 교체됐어요. <b>명단 데이터는 유지</b>되고, 위치·색상은 새 디자인 기본값으로 초기화됐습니다. (D-4 ②)`);
 }
 function sampleMark(d){const sp=SPORTS[d.sport];const ink=d.ink||'#1d2330';
   if(sp.back.num)return `<text x="36" y="47" text-anchor="middle" font-size="20" font-weight="900" fill="${ink}">10</text>`;
@@ -497,21 +567,25 @@ function templatePanel(){
   const keys=Object.keys(SPORTS);
   const filter=`<button class="chip ${state.tplFilter==='all'?'on':''}" onclick="setTplFilter('all')">전체</button>`+keys.map(k=>`<button class="chip ${state.tplFilter===k?'on':''}" onclick="setTplFilter('${k}')">${SPORTS[k].label}</button>`).join('');
   const list=DESIGNS.filter(d=>state.tplFilter==='all'||d.sport===state.tplFilter);
-  const cards=list.map(d=>`<button class="dcard ${d.id===state.design?'on':''}" onclick="applyDesign('${d.id}')"><div class="dthumb">${designThumb(d)}</div><div class="dmeta"><span class="dn">${d.name}</span><span class="dsport">${SPORTS[d.sport].label}</span></div>${d.id===state.design?'<span class="dcur">적용됨</span>':''}</button>`).join('');
+  const cards=list.map(d=>`<button class="dcard ${d.id===state.design?'on':''}" onclick="applyDesign('${d.id}')"><div class="dthumb">${designThumb(d)}</div><div class="dmeta"><span class="dn">${d.name}</span><span class="dsport">${SPORTS[d.sport].label}</span></div>${slotBadges(d)}${d.id===state.design?'<span class="dcur">적용됨</span>':''}</button>`).join('');
   return `
   <div class="seclabel"><span class="step">1</span> 종목</div>
   <div class="chips">${filter}</div>
   <div class="seclabel" style="margin-top:16px"><span class="step">2</span> 디자인 <span style="font-weight:500;color:var(--muted);font-size:12px;margin-left:5px">${list.length}종</span></div>
   <div class="dgrid">${cards}</div>
-  <div class="hint" style="margin-top:12px">디자인을 바꿔도 <b>명단 데이터(이름·번호)는 유지</b>돼요. 새 디자인에 없는 항목(예: 등번호)은 <b>숨겨지고 데이터는 보존</b>되며, 위치·색은 새 디자인 기본값으로 초기화됩니다.</div>`;
+  <div class="hint" style="margin-top:12px">디자인을 바꿔도 <b>명단 데이터(이름·번호)는 유지</b>돼요. 새 디자인에 없는 항목(예: 등번호)은 <b>숨겨지고 데이터는 보존</b>되며, 위치·색은 새 디자인 기본값으로 초기화됩니다. 뱃지로 <b>슬롯 구성(이름/번호)</b>을 미리 확인할 수 있어요.</div>`;
 }
 function sportsPanel(){
-  const sp=SPORTS[state.sport];const c=counts();
+  const sp=SPORTS[state.sport];const g=gateInfo();
   const locName=[],locNum=[];
   if(sp.back.name)locName.push('등 상단'); if(sp.front.name==='big')locName.push('가슴(大)');
-  if(sp.back.num)locNum.push('등 중앙(大)'); if(sp.front.num==='small')locNum.push('가슴(小)');
+  if(sp.back.num)locNum.push('등 중앙(大)'); if(sp.front.num==='small')locNum.push('가슴(小)'); if(sp.sleeve&&sp.back.num)locNum.push('소매');
   const moved=Object.keys(state.slotPos.back).length||Object.keys(state.slotPos.front).length;
   const tog=(f,label,locs)=>`<label class="ftoggle ${state.fields[f]?'':'off'}"><input type="checkbox" ${state.fields[f]?'checked':''} onclick="event.stopPropagation()" onchange="toggleField('${f}')">${label}<span class="loc">${state.fields[f]?locs.join(' · '):'제외됨'}</span></label>`;
+  const stat=g.d?`<span class="tag2" style="color:var(--danger)">●</span> 오류 ${g.d}건 — 수정 필요`
+    :g.wOpen?`<span class="tag2" style="color:var(--warn)">●</span> 경고 ${g.wOpen}건 — 확인 필요`
+    :g.wAck?`<span class="tag2" style="color:var(--warn)">●</span> ⚠️ 그대로 진행 ${g.wAck}건 (플래그 전달)`
+    :`<span class="tag2" style="color:var(--ok)">●</span> 명단 이상 없음`;
   return `
   <div class="seclabel"><span class="step">1</span> 가변 필드</div>
   <div class="curtpl">
@@ -535,7 +609,7 @@ function sportsPanel(){
     <span><span class="bt">명단 입력 (${state.rows.length}명)</span><span class="bs">이름·등번호·사이즈·수량 · 엑셀 붙여넣기</span></span>
     <span class="arr">›</span>
   </button>
-  <div class="statusline" onclick="openReview()">${c.d?`<span class="tag2" style="color:var(--danger)">●</span> 오류 ${c.d}건 — 검수 필요`:c.w?`<span class="tag2" style="color:var(--warn)">●</span> 확인 ${c.w}건`:`<span class="tag2" style="color:var(--ok)">●</span> 명단 이상 없음`}<span class="go">검수 보기 ›</span></div>
+  <div class="statusline" onclick="openReview()">${stat}<span class="go">검수 보기 ›</span></div>
   <div class="hint" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line2)">이름·등번호와 <b>사이즈·수량</b>을 명단에서 인원별로 입력해요. 장바구니에서는 총 수량·금액만 확인합니다.</div>`;
 }
 
@@ -551,6 +625,7 @@ function stageSports(){
   if(state.side==='back'){
     if(sp.back.name&&state.fields.name){const[px,py]=gpos('back','name',135,118);z+=`<div class="printzone" data-slot="name" style="width:160px;height:34px;left:${px}px;top:${py}px"><span class="zonetag">이름</span><span class="pname" style="font-family:${ff};${colStyle};font-size:${longName?15:21}px">${esc(r.name)||'NAME'}</span></div>`;}
     if(sp.back.num&&state.fields.num){const[px,py]=gpos('back','num',155,165);z+=`<div class="printzone" data-slot="num" style="width:120px;height:108px;left:${px}px;top:${py}px"><span class="zonetag">등번호</span><span class="pnum" style="font-family:${ff};${colStyle};font-size:84px">${esc(r.num)||'00'}</span></div>`;}
+    if(sp.sleeve&&sp.back.num&&state.fields.num){const[px,py]=gpos('back','sleeve',44,146);z+=`<div class="printzone" data-slot="sleeve" style="width:50px;height:42px;left:${px}px;top:${py}px"><span class="zonetag">소매</span><span class="pnum" style="font-family:${ff};${colStyle};font-size:28px">${esc(r.num)||'00'}</span></div>`;}
   }else{
     if(sp.front.num==='small'&&state.fields.num){const[px,py]=gpos('front','num',238,150);z+=`<div class="printzone" data-slot="num" style="width:56px;height:56px;left:${px}px;top:${py}px"><span class="zonetag">번호</span><span class="pnum" style="font-family:${ff};${colStyle};font-size:36px">${esc(r.num)||'00'}</span></div>`;}
     if(sp.front.name==='big'&&state.fields.name){const[px,py]=gpos('front','name',125,175);z+=`<div class="printzone" data-slot="name" style="width:180px;height:42px;left:${px}px;top:${py}px"><span class="zonetag">이름</span><span class="pname" style="font-family:${ff};${colStyle};font-size:${longName?19:26}px">${esc(r.name)||'NAME'}</span></div>`;}
@@ -570,16 +645,33 @@ function miniTee(side){const r=state.rows[state.sel]||{name:'',num:''};const sp=
   const collar=d.collar||'#dcdde0';
   return `<svg width="72" height="68" viewBox="0 0 72 68"><path d="M26 6 L16 11 L5 22 L14 31 L21 26 L21 62 L51 62 L51 26 L58 31 L67 22 L56 11 L46 6 Q44 14 36 14 Q28 14 26 6 Z" fill="${d.body}" stroke="#d0d2d6" stroke-width="1.5"/><path d="M26 6 Q28 14 36 14 Q44 14 46 6" fill="none" stroke="${collar}" stroke-width="1.8"/>${inner}</svg>`;}
 
+/* ---- 최초 진입 종목 선택 (PRD3 진입점 ①) ---- */
+function renderIntro(){const firstByS={};DESIGNS.forEach(d=>{if(!firstByS[d.sport])firstByS[d.sport]=d;});
+  document.getElementById('introGrid').innerHTML=Object.keys(SPORTS).map(k=>{const d=firstByS[k];
+    return `<button class="dcard" onclick="pickIntro('${k}')"><div class="dthumb">${designThumb(d)}</div><div class="dmeta"><span class="dn">${SPORTS[k].label}</span><span class="dsport">${SPORTS[k].desc}</span></div>${slotBadges(d)}</button>`;}).join('');}
+function pickIntro(k){const d=DESIGNS.find(x=>x.sport===k);if(d){state.design=d.id;state.sport=k;}closeIntro();render();}
+function closeIntro(){document.getElementById('introOverlay').classList.remove('show');}
+
 /* ---- roster modal ---- */
 function openRoster(){state.styleSel=Math.min(state.styleSel,state.rows.length-1);renderRoster();document.getElementById('rosterOverlay').classList.add('show');}
 function closeRoster(){document.getElementById('rosterOverlay').classList.remove('show');render();}
 function renderRoster(){
   document.getElementById('rosCnt').textContent=`${state.rows.length}명`;
-  let th='<th></th><th></th>';if(nameOn())th+='<th>이름 / 닉네임</th>';if(numOn())th+='<th style="text-align:center">등번호</th>';th+='<th style="text-align:center">사이즈</th><th style="text-align:center">수량</th><th></th>';
+  document.getElementById('rosLimit').innerHTML=state.rows.length>ROW_LIMIT_HINT?`<div class="alert w" style="margin:0 0 12px">${I.warn}<div>한 세트 인원이 많아요. <b>상한 초과 시 자동 분할 주문 안내</b>가 표시됩니다. (상한값은 성능 기준으로 P3솔루션팀이 확정 — D-2)</div></div>`:'';
+  let th='<th></th><th></th>';if(nameOn())th+='<th>이름 / 닉네임</th>';if(numOn())th+='<th style="text-align:center">등번호</th>';th+='<th style="text-align:center">사이즈</th><th style="text-align:center">수량</th><th style="text-align:center">스타일</th><th></th>';
   document.getElementById('rosHead').innerHTML=th;
   document.getElementById('rosBody').innerHTML=state.rows.map((r,i)=>rosterRow(r,i)).join('');
-  const c=counts();
-  document.getElementById('rosLog').innerHTML=c.d?`<b style="color:var(--danger)">오류 ${c.d}건</b>`:c.w?`<b style="color:var(--warn)">확인 ${c.w}건</b>`:`<b style="color:var(--ok)">이상 없음</b>`;
+  const g=gateInfo();
+  document.getElementById('rosLog').innerHTML=g.d?`<b style="color:var(--danger)">오류 ${g.d}건</b>`:g.wOpen?`<b style="color:var(--warn)">경고 ${g.wOpen}건 — 검수에서 확인 필요</b>`:g.wAck?`<b style="color:var(--warn)">⚠️ 그대로 진행 ${g.wAck}건</b>`:`<b style="color:var(--ok)">이상 없음</b>`;
+  renderStylebar();
+}
+function renderStylebar(){
+  const i=Math.min(state.styleSel,state.rows.length-1);const sr=state.rows[i];if(!sr)return;
+  document.getElementById('rosStyle').innerHTML=`<div class="stylebar">
+    <span class="who">${esc(sr.name)||(i+1)+'번 행'} <span>행별 스타일 (2층 override)</span></span>
+    <div class="grp"><span class="lbl">폰트</span><select onchange="setRowStyle('font',this.value)"><option value="">공통 (${state.common.font})</option>${Object.keys(FONTS).map(f=>`<option ${sr.font===f?'selected':''} value="${f}">${f}</option>`).join('')}</select></div>
+    <div class="grp"><span class="lbl">색상</span>${COLORS.map(c2=>`<div class="sw ${(sr.color||'')===c2[0]?'on':''}" title="${c2[1]}" style="background:${c2[0]}" onclick="setRowStyle('color','${c2[0]}')"></div>`).join('')}</div>
+    <button class="reset" onclick="resetRowStyle()">공통으로 되돌리기</button></div>`;
 }
 function rosterRow(r,i){
   const f=rowFlags(r,i);const fl=k=>f.find(x=>x.k===k);const lv=rowLevel(r,i);
@@ -590,43 +682,72 @@ function rosterRow(r,i){
   if(numOn())cells+=`<td><div class="cell num ${cls('num')}"><input value="${esc(r.num)}" placeholder="00" maxlength="3" inputmode="numeric" oninput="updNum(${i},this.value)" onclick="event.stopPropagation()"></div></td>`;
   cells+=`<td class="szcell"><select class="rsz ${!r.size?'miss':''}" onchange="upd(${i},'size',this.value)" onclick="event.stopPropagation()"><option value="">-</option>${SIZES.map(s=>`<option ${s===r.size?'selected':''}>${s}</option>`).join('')}</select></td>`;
   cells+=`<td class="qtycell"><div class="rqty" onclick="event.stopPropagation()"><button onclick="stepQty(${i},-1)">−</button><span>${r.qty}</span><button onclick="stepQty(${i},1)">+</button></div></td>`;
+  cells+=`<td class="stylecell"><button class="styletag ${r.font||r.color?'ov':''}" onclick="selStyle(${i});event.stopPropagation()"><span class="cdot" style="background:${effColor(r)}"></span>${r.font||r.color?'개별':'공통'}</button></td>`;
   return `<tr class="${i===state.sel?'sel':''}" onclick="selRow(${i})">
     <td class="flagcol"><div class="flagbar" style="background:${bar}"></div></td>
     <td><div class="idx">${i+1}</div></td>
     ${cells}
-    <td class="delcol"><button class="del" onclick="delRow(${i});event.stopPropagation()">✕</button></td>
+    <td class="delcol"><button class="del dup" title="행 복제" onclick="dupRow(${i});event.stopPropagation()">⧉</button><button class="del" title="행 삭제" onclick="delRow(${i});event.stopPropagation()">✕</button></td>
   </tr>`;
 }
-function selRow(i){state.sel=i;renderRoster();render();}
+function selRow(i){state.sel=i;state.styleSel=i;renderRoster();render();}
+
+/* ---- paste 매핑 확인 (T2 폴백) ---- */
+const PASTE=[['윤지호','8'],['임수아','6'],['한예준','2'],['오유진','1'],['신라온','12']];
+let mapSel=['name','num'];
+function pasteDemo(){mapSel=['name','num'];renderMap();document.getElementById('mapOverlay').classList.add('show');}
+function closeMap(){document.getElementById('mapOverlay').classList.remove('show');}
+function setMap(c,v){mapSel[c]=v;renderMap();}
+function renderMap(){
+  const opts=[['name','이름 / 닉네임'],['num','등번호'],['skip','사용 안 함']];
+  const head=mapSel.map((m,c)=>`<th><div class="selectbox"><select onchange="setMap(${c},this.value)">${opts.map(o=>`<option value="${o[0]}" ${m===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div></th>`).join('');
+  const rows=PASTE.map(p=>`<tr>${p.map(v=>`<td style="padding:9px 8px;border-bottom:1px solid var(--line2);font-size:13px">${v}</td>`).join('')}</tr>`).join('');
+  document.getElementById('mapBody').innerHTML=`<table class="vt"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table><div class="hint" style="margin-top:10px">사이즈·수량 열이 함께 붙여넣어지면 자동 매핑돼요. (T2 컬럼 자동 매핑 — 실제 구현 시 헤더 인식/순서 매핑 규칙 적용)</div>`;
+}
+function applyPaste(){PASTE.forEach(p=>{const row={name:'',num:'',size:'',qty:1,font:null,color:null,ack:false};
+  p.forEach((v,c)=>{if(mapSel[c]==='name')row.name=v;if(mapSel[c]==='num')row.num=v;});
+  state.rows.push(row);});closeMap();renderRoster();render();}
 
 /* ---- review modal ---- */
 function openReview(){document.getElementById('revCount').textContent=`${state.rows.length}명`;renderReview();document.getElementById('reviewOverlay').classList.add('show');}
-function closeReview(){document.getElementById('reviewOverlay').classList.remove('show');}
+function closeReview(){document.getElementById('reviewOverlay').classList.remove('show');render();}
 function setRevFilter(f){state.revFilter=f;renderReview();}
+function toggleAck(i){state.rows[i].ack=!state.rows[i].ack;renderReview();if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();}
 function renderReview(){
-  const c=counts();
+  const c=counts();const g=gateInfo();
   document.getElementById('revFilter').innerHTML=`<button class="fbtn ${state.revFilter==='all'?'on':''}" onclick="setRevFilter('all')">전체<span class="n">${state.rows.length}</span></button><button class="fbtn ${state.revFilter==='issue'?'on':''}" onclick="setRevFilter('issue')">확인 필요<span class="n">${c.w+c.d}</span></button><button class="fbtn ${state.revFilter==='ok'?'on':''}" onclick="setRevFilter('ok')">이상 없음<span class="n">${c.ok}</span></button>`;
   const sp=SPORTS[state.sport];
   document.getElementById('revGrid').innerHTML=state.rows.map((r,i)=>{
     const lv=rowLevel(r,i),f=rowFlags(r,i);
     if(state.revFilter==='issue'&&lv==='ok')return '';if(state.revFilter==='ok'&&lv!=='ok')return '';
-    const cc=lv==='d'?'bad':lv==='w'?'wn':'';const badge=lv==='d'?`<span class="gbadge badge d">오류</span>`:lv==='w'?`<span class="gbadge badge w">확인</span>`:'';
+    const cc=lv==='d'?'bad':lv==='w'?'wn':'';const badge=lv==='d'?`<span class="gbadge badge d">오류</span>`:lv==='w'?`<span class="gbadge badge w">${r.ack?'⚠️ 진행':'확인'}</span>`:'';
     const ff=fontCss(effFont(r)),col=effColor(r),fc=col==='#ffffff'?'#cfd3da':col,longN=visLen(r.name||'')>5;
     const mini=`<svg width="96" height="92" viewBox="0 0 96 92"><path d="M34 8 L21 14 L7 28 L18 40 L28 33 L28 84 L68 84 L68 33 L78 40 L89 28 L75 14 L62 8 Q59 19 48 19 Q37 19 34 8 Z" fill="#fff" stroke="#dcdde0" stroke-width="1.6"/>${sp.back.name&&state.fields.name?`<text x="48" y="40" text-anchor="middle" font-size="${longN?9:12}" font-weight="800" fill="${fc}" font-family="${ff}">${esc(r.name)||'NAME'}</text>`:''}${sp.back.num&&state.fields.num?`<text x="48" y="70" text-anchor="middle" font-size="30" font-weight="900" fill="${fc}" font-family="${ff}">${esc(r.num)||'00'}</text>`:''}</svg>`;
     const gname=nameOn()?(esc(r.name)||'(이름 없음)'):(esc(r.num)||'(번호 없음)')+'번';
     const gmeta=[nameOn()&&numOn()?(esc(r.num)||'-')+'번':'',r.size?r.size:''].filter(Boolean).join(' · ')||'-';
-    return `<div class="gcard ${cc}">${badge}<div class="mini">${mini}</div><div class="gname">${gname}</div><div class="gmeta">${gmeta}</div>${f.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:7px">${f.map(x=>`<span class="badge ${x.lv}">${x.t}</span>`).join('')}</div>`:''}</div>`;
+    const ackBtn=lv==='w'?`<button class="ackbtn ${r.ack?'on':''}" onclick="toggleAck(${i});event.stopPropagation()">${r.ack?'⚠️ 그대로 진행 — 렌더 잡에 플래그 전달':'그대로 진행'}</button>`:'';
+    return `<div class="gcard ${cc}" onclick="openDetail(${i})">${badge}<div class="mini">${mini}</div><div class="gname">${gname}</div><div class="gmeta">${gmeta}</div>${f.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:7px">${f.map(x=>`<span class="badge ${x.lv}">${x.t}</span>`).join('')}</div>`:''}${ackBtn}</div>`;
   }).join('')||`<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:30px">해당 항목이 없어요.</div>`;
-  document.getElementById('revLog').innerHTML=c.d?`<b style="color:var(--danger)">오류 ${c.d}건</b> · 확인 ${c.w}건`:c.w?`<b style="color:var(--warn)">확인 ${c.w}건</b>`:`<b style="color:var(--ok)">모두 이상 없음</b>`;
+  document.getElementById('revLog').innerHTML=g.d?`<b style="color:var(--danger)">오류 ${g.d}건</b> — 수정 전 주문 불가`:g.wOpen?`<b style="color:var(--warn)">경고 ${g.wOpen}건</b> — '그대로 진행' 확인 또는 수정 필요`:g.wAck?`<b style="color:var(--warn)">⚠️ 그대로 진행 ${g.wAck}건</b> · 주문 가능`:`<b style="color:var(--ok)">모두 이상 없음</b>`;
 }
 
-/* ---- cart (size/qty per name) modal ---- */
+/* ---- 검수 개별 확대 (기능 4b) ---- */
+function openDetail(i){const r=state.rows[i];if(!r)return;const sp=SPORTS[state.sport];
+  const ff=fontCss(effFont(r)),col=effColor(r),fc=col==='#ffffff'?'#cfd3da':col,longN=visLen(r.name||'')>5;
+  const f=rowFlags(r,i);
+  const big=`<svg width="270" height="258" viewBox="0 0 96 92"><path d="M34 8 L21 14 L7 28 L18 40 L28 33 L28 84 L68 84 L68 33 L78 40 L89 28 L75 14 L62 8 Q59 19 48 19 Q37 19 34 8 Z" fill="#fff" stroke="#dcdde0" stroke-width="1.6"/>${sp.back.name&&state.fields.name?`<text x="48" y="40" text-anchor="middle" font-size="${longN?9:12}" font-weight="800" fill="${fc}" font-family="${ff}">${esc(r.name)||'NAME'}</text>`:''}${sp.back.num&&state.fields.num?`<text x="48" y="70" text-anchor="middle" font-size="30" font-weight="900" fill="${fc}" font-family="${ff}">${esc(r.num)||'00'}</text>`:''}</svg>`;
+  document.getElementById('detTitle').textContent=`${i+1}번 · ${r.name||'(이름 없음)'}`;
+  document.getElementById('detBody').innerHTML=`${big}<div style="font-size:14px;font-weight:700;margin-top:10px">${esc(r.name)||'-'}${numOn()?` · ${esc(r.num)||'-'}번`:''} · ${r.size||'<span style="color:var(--danger)">사이즈 미선택</span>'} · ${r.qty}벌</div><div style="font-size:12px;color:var(--muted);margin-top:4px">${effFont(r)} · 공용 엔진 프리뷰 기준(편집=실물 일치)</div>${f.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px">${f.map(x=>`<span class="badge ${x.lv}">${x.t}</span>`).join('')}</div>`:''}`;
+  document.getElementById('detailOverlay').classList.add('show');}
+function closeDetail(){document.getElementById('detailOverlay').classList.remove('show');}
+
+/* ---- cart (집계·금액 확인 전용) modal ---- */
 function openCart(){renderCart();document.getElementById('cartOverlay').classList.add('show');}
 function closeCart(){document.getElementById('cartOverlay').classList.remove('show');}
 function renderCart(){
   const body=document.getElementById('cartBody');
   document.getElementById('cartTitle').textContent='장바구니 담기';
-  const c=counts();
+  const g=gateInfo();
   const bySize={};state.rows.forEach(r=>{if(r.size)bySize[r.size]=(bySize[r.size]||0)+(+r.qty||0);});
   const sizeChips=SIZES.filter(s=>bySize[s]).map(s=>`<span class="szpill">${s} <b>${bySize[s]}</b></span>`).join('')||'<span class="mini2" style="color:var(--danger)">사이즈 미입력</span>';
   const list=state.rows.map((r,i)=>{
@@ -638,6 +759,10 @@ function renderCart(){
     return `<div class="citem"><div class="who"><div class="av">${av}</div><div><div class="nm">${nm}</div><div class="nn">${nn}</div></div></div><div class="ci-right">${sz}<span class="ci-q">${r.qty}벌</span></div></div>`;
   }).join('');
   const fnames=[nameOn()?'이름':'',numOn()?'번호':''].filter(Boolean).join('·');
+  const gateMsg=g.d?`<div class="alert w">${I.warn}<div>명단에 <b>오류 ${g.d}건</b>(빈값·사이즈 미선택·지원하지 않는 문자) — <a onclick="closeCart();openRoster()">명단</a>에서 수정 후 담을 수 있어요.</div></div>`
+    :g.wOpen?`<div class="alert w">${I.warn}<div><b>경고 ${g.wOpen}건</b>(번호 중복·이름 자동 축소) — <a onclick="closeCart();openReview()">검수</a>에서 '그대로 진행'을 선택하거나 수정해야 담을 수 있어요.</div></div>`
+    :g.wAck?`<div class="alert i">${I.info}<div>⚠️ <b>그대로 진행 ${g.wAck}건</b>은 렌더 잡에 플래그로 전달돼 생산 전 최종 검수 대상이 됩니다.</div></div>`
+    :`<div class="alert i">${I.info}<div>수량·사이즈는 명단에서 관리해요. 여기서는 총 현황과 금액만 확인합니다.</div></div>`;
   body.innerHTML=`
     <div class="prodbox"><div><div class="pn">스포츠웨어 · 라운드 반팔 티셔츠</div><div class="pc">색상 : 멜란지 · 가변 인쇄(${fnames}) · ${design().name}</div></div>
       <div class="pr"><div class="now">${UNIT.toLocaleString()}원</div><div class="was">31,500원</div></div></div>
@@ -648,12 +773,12 @@ function renderCart(){
     </div>
     <div class="sizehdr">인원별 확인 <span class="mini2">사이즈·수량은 <a onclick="closeCart();openRoster()">명단</a>에서 설정</span></div>
     <div class="clist">${list}</div>
-    ${c.d?`<div class="alert w">${I.warn}<div>명단에 확인 필요 ${c.d}건(사이즈 미선택 포함) — <a onclick="closeCart();openRoster()">명단</a>에서 수정 후 담을 수 있어요.</div></div>`:`<div class="alert i">${I.info}<div>수량·사이즈는 명단에서 관리해요. 여기서는 총 현황과 금액만 확인합니다.</div></div>`}`;
+    ${gateMsg}`;
   document.getElementById('cartCnt').textContent=`합계 (총 ${totalQty()}벌)`;
   document.getElementById('cartSum').textContent=(UNIT*totalQty()).toLocaleString()+'원';
   const btn=document.getElementById('cartBtn');
-  btn.disabled=c.d>0;
-  btn.textContent=c.d>0?`명단 확인 ${c.d}건 필요`:'주문하기';
+  btn.disabled=g.d>0||g.wOpen>0;
+  btn.textContent=g.d>0?`오류 ${g.d}건 수정 필요`:g.wOpen>0?`경고 ${g.wOpen}건 확인 필요`:'주문하기';
 }
 function stepQty(i,d){state.rows[i].qty=Math.max(0,(+state.rows[i].qty||0)+d);
   if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();
@@ -662,7 +787,8 @@ function stepQty(i,d){state.rows[i].qty=Math.max(0,(+state.rows[i].qty||0)+d);
 
 /* ---- render progress ---- */
 let rTimer=null;
-function startRender(){closeCart();runRender(state.rows.length,'명단 한 명씩 이름·번호를 벡터로 변환해 인쇄 파일을 만들고 있어요.');}
+function startRender(){closeCart();const g=gateInfo();
+  runRender(state.rows.length,`명단 한 명씩 이름·번호를 벡터로 변환해 인쇄 파일을 만들고 있어요.${g.wAck?` ⚠️ 그대로 진행 ${g.wAck}건은 플래그와 함께 전달돼요.`:''}`);}
 function startRenderEnv(){runRender(state.envQty,'봉투마다 번호를 벡터로 변환해 인쇄 파일을 만들고 있어요.');}
 function runRender(total,desc){
   const o=document.getElementById('renderOverlay');
@@ -677,20 +803,20 @@ function runRender(total,desc){
 }
 function closeRender(){clearInterval(rTimer);document.getElementById('renderOverlay').classList.remove('show');}
 
-/* ---- envelope ---- */
+/* ---- envelope (Phase 3 데모 — 공용 엔진 확장 검증용) ---- */
 function envEditor(){
   const rail=railHTML([{k:'clip',i:'clip',t:'클립아트'},{k:'logo',i:'logo',t:'로고·QR'},{k:'text',i:'text',t:'텍스트'},{k:'photo',i:'photo',t:'사진'},{k:'bg',i:'bg',t:'배경'},{k:'tpl',i:'tpl',t:'템플릿'},{k:'vdata',i:'vdata',t:'가변 데이터'}],'vdata');
   return topbar('blue','저장하기','')+`<div class="body">${rail}
-    <div class="panel"><div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">같은 디자인에 봉투마다 다른 번호·우편번호를 넣어요. 수량만큼 자동으로 채워집니다.</div></div>
+    <div class="panel"><div class="panel-head"><h2>${I.vdata} 가변 데이터</h2><div class="sub">같은 디자인에 봉투마다 다른 번호·우편번호를 넣어요. 수량만큼 자동으로 채워집니다. <b>(Phase 3 범위 데모)</b></div></div>
       <div class="panel-body">${envPanel()}</div>
       <div class="panel-foot"><button class="btn primary" style="flex:1" onclick="startRenderEnv()">${state.envQty.toLocaleString()}건 생성</button></div></div>
     ${stageEnv()}${envThumbs()}</div>`;
 }
 function envPanel(){const over=state.envQty>200;return `
   <div class="seg"><button class="${state.envMode==='serial'?'on':''}" onclick="setEnvMode('serial')">일련번호</button><button class="${state.envMode==='table'?'on':''}" onclick="setEnvMode('table')">표 입력</button><button class="${state.envMode==='upload'?'on':''}" onclick="setEnvMode('upload')">엑셀 업로드</button></div>
-  ${state.envMode==='serial'?`<div class="alert i">${I.info}<div>8자리 번호가 시작값부터 순차적으로 수량만큼 자동 생성돼요.</div></div><div class="fldlabel">시작 번호</div><input class="tin" value="${state.envStart}" oninput="state.envStart=this.value;render()"><div class="fldlabel">수량</div><input class="tin" value="${state.envQty}" inputmode="numeric" oninput="state.envQty=+this.value.replace(/[^0-9]/g,'')||0;render()">`
+  ${state.envMode==='serial'?`<div class="alert i" style="margin-top:0">${I.info}<div>8자리 번호가 시작값부터 순차적으로 수량만큼 자동 생성돼요.</div></div><div class="fldlabel">시작 번호</div><input class="tin" value="${state.envStart}" oninput="state.envStart=this.value;render()"><div class="fldlabel">수량</div><input class="tin" value="${state.envQty}" inputmode="numeric" oninput="state.envQty=+this.value.replace(/[^0-9]/g,'')||0;render()">`
   :state.envMode==='table'?`<div class="hint" style="margin-top:0">봉투마다 다른 번호·우편번호를 직접 입력하거나 엑셀에서 붙여넣어요.</div><div class="tbl-tools" style="margin-top:12px"><button class="btn">+ 행 추가</button><button class="btn">⎘ 엑셀 붙여넣기</button></div><div class="alert i" style="margin-top:4px">${I.info}<div>표 입력은 스포츠웨어 명단과 <b>같은 공통 엔진</b>을 그대로 사용해요.</div></div>`
-  :`<div class="fldlabel">엑셀 파일 업로드</div><div class="tin" style="border-style:dashed;text-align:center;padding:24px;color:var(--muted)">.xlsx · .csv 끌어다 놓기</div><div class="hint">번호·우편번호 열을 봉투의 가변 슬롯에 자동 매핑합니다.</div>`}
+  :`<div class="alert w" style="margin-top:0">${I.warn}<div><b>파일 업로드 파서는 Phase 2 범위</b>(1차는 셀 붙여넣기로 충당 — C5). 이 화면은 확장 컨셉 데모예요.</div></div><div class="fldlabel">엑셀 파일 업로드</div><div class="tin" style="border-style:dashed;text-align:center;padding:24px;color:var(--muted)">.xlsx · .csv 끌어다 놓기</div><div class="hint">번호·우편번호 열을 봉투의 가변 슬롯에 자동 매핑합니다.</div>`}
   <div style="margin-top:18px;font-size:12.5px"><div style="display:flex;padding:5px 0;color:#4a4e56">생성 수량<b style="margin-left:auto">${state.envQty.toLocaleString()}건</b></div><div style="display:flex;padding:5px 0;color:#4a4e56">번호 범위<b style="margin-left:auto">${state.envStart} ~ ${endSerial()}</b></div></div>
   ${over?`<div class="alert w">${I.warn}<div>한 번에 만드는 수량이 많아요. 생성은 백그라운드 처리되고 진행률이 표시됩니다. 상한 초과 시 자동 분할 안내. <b>(상한값은 성능 기준으로 설정)</b></div></div>`:''}`;}
 function endSerial(){const n=parseInt(state.envStart,10);if(isNaN(n))return '—';return String(n+Math.max(0,state.envQty-1)).padStart(state.envStart.length,'0');}
@@ -718,19 +844,21 @@ function startDrag(e){e.preventDefault();const el=e.currentTarget;const ox=parse
   function mv(ev){el.style.left=(ox+ev.clientX-sx)+'px';el.style.top=(oy+ev.clientY-sy)+'px';}
   function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);el.classList.remove('dragging');state.slotPos[state.side][el.dataset.slot]={x:parseFloat(el.style.left),y:parseFloat(el.style.top)};render();}
   document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);}
-function setCommon(k,v){state.common[k]=v;render();}
-function selStyle(i){state.styleSel=i;state.sel=i;renderRoster();}
-function setRowStyle(k,v){state.rows[state.styleSel][k]=v||null;renderRoster();}
-function resetRowStyle(){const r=state.rows[state.styleSel];r.font=null;r.color=null;renderRoster();}
-function upd(i,k,v){state.rows[i][k]=v;if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();render();}
-function updNum(i,v){state.rows[i].num=v.replace(/[^0-9]/g,'').slice(0,3);renderRoster();render();}
-function addRow(){state.rows.push({name:'',num:'',size:'',qty:1,font:null,color:null});state.styleSel=state.rows.length-1;state.sel=state.styleSel;renderRoster();}
+function setCommon(k,v){state.common[k]=v;render();if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();}
+function selStyle(i){state.styleSel=i;state.sel=i;renderRoster();render();}
+function setRowStyle(k,v){state.rows[state.styleSel][k]=v||null;renderRoster();render();}
+function resetRowStyle(){const r=state.rows[state.styleSel];r.font=null;r.color=null;renderRoster();render();}
+function upd(i,k,v){state.rows[i][k]=v;if(k==='name')state.rows[i].ack=false;if(document.getElementById('rosterOverlay').classList.contains('show'))renderRoster();render();}
+function updNum(i,v){state.rows[i].num=v.replace(/[^0-9]/g,'').slice(0,3);state.rows[i].ack=false;renderRoster();render();}
+function addRow(){state.rows.push({name:'',num:'',size:'',qty:1,font:null,color:null,ack:false});state.styleSel=state.rows.length-1;state.sel=state.styleSel;renderRoster();}
+function dupRow(i){const r=state.rows[i];state.rows.splice(i+1,0,{...r,ack:false});state.styleSel=i+1;state.sel=i+1;renderRoster();render();}
 function delRow(i){if(state.rows.length<=1)return;state.rows.splice(i,1);state.styleSel=Math.min(state.styleSel,state.rows.length-1);state.sel=Math.min(state.sel,state.rows.length-1);renderRoster();render();}
-function pasteDemo(){[['윤지호','8'],['임수아','6'],['한예준','2'],['오유진','1'],['신라온','12']].forEach(m=>state.rows.push({name:m[0],num:m[1],size:'',qty:1,font:null,color:null}));renderRoster();}
 function setEnvMode(m){state.envMode=m;render();}
 
 render();
-['rosterOverlay','reviewOverlay','cartOverlay','renderOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});});
+renderIntro();
+document.getElementById('introOverlay').classList.add('show'); /* PRD3 진입점 ①: 최초 진입 1회 */
+['rosterOverlay','reviewOverlay','cartOverlay','renderOverlay','mapOverlay','detailOverlay','introOverlay'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)document.getElementById(id).classList.remove('show');});});
 </script>
 </body>
 </html>
