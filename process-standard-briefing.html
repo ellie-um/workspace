@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로젝트 실행 원칙 · 브리핑</title>
+<style>
+  :root{
+    --ink:#1a1922; --muted:#5c5b68; --faint:#93929e;
+    --line:#eae8f1; --line-2:#dddae8; --bg:#fff; --paper:#f6f5fa;
+    --phase:#4f46b8; --phase-soft:#efedfb; --phase-line:#d0ccf0;
+    --gate:#a4640f; --gate-soft:#fbeeda; --gate-line:#ecc98a;
+    --note:#0e7c66; --note-soft:#e7f5f0; --note-line:#c3e5da;
+    --warn:#b4453a; --warn-soft:#fbeceb; --warn-line:#f1ccc8;
+    --ok:#2f6e56;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+  }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{font-family:var(--sans); color:var(--ink); background:var(--paper);
+    line-height:1.72; font-size:16px; -webkit-font-smoothing:antialiased; padding:40px 18px;}
+  .page{max-width:880px; margin:0 auto; background:var(--bg); border:1px solid var(--line);
+    border-radius:18px; overflow:hidden;}
+  .inner{padding:52px 56px 60px;}
+
+  /* header */
+  header{margin-bottom:14px;}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--phase); font-weight:600;}
+  h1{font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1.25; margin:12px 0 10px;}
+  .lede{font-size:16.5px; color:var(--muted); margin:0 0 18px;}
+  .meta{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:13.5px; color:var(--faint);}
+  .meta b{color:var(--muted); font-weight:600;}
+
+  /* summary hero */
+  .summary{background:var(--paper); border:1px solid var(--line-2); border-radius:14px;
+    padding:8px 26px; margin:30px 0 8px;}
+  .srow{display:flex; gap:18px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .srow:last-child{border-bottom:none;}
+  .slabel{flex:none; width:96px; font-family:var(--mono); font-size:12px; letter-spacing:.05em;
+    font-weight:700; padding-top:3px;}
+  .slabel.q{color:var(--warn);} .slabel.s{color:var(--phase);} .slabel.a{color:var(--ok);}
+  .stext{font-size:16px;}
+
+  /* sections */
+  section{margin-top:60px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:8px;}
+  .sec-num{font-family:var(--mono); font-size:14px; color:var(--phase); font-weight:700;}
+  h2{font-size:23px; font-weight:700; letter-spacing:-.015em; margin:0;}
+  .sec-sub{font-size:15px; color:var(--faint); margin:2px 0 24px;}
+
+  /* PM comment */
+  .comment{border-left:3px solid var(--note); background:var(--note-soft); border-radius:0 12px 12px 0;
+    padding:16px 20px; margin-top:22px; font-size:15px; color:#13503f;}
+  .comment .lbl{font-family:var(--mono); font-size:11px; letter-spacing:.09em; color:var(--note);
+    font-weight:700; display:block; margin-bottom:5px;}
+
+  /* 악순환 */
+  .cycle{display:flex; flex-wrap:wrap; align-items:center; gap:10px;}
+  .cy{background:var(--warn-soft); border:1px solid var(--warn-line); color:var(--warn);
+    border-radius:10px; padding:11px 15px; font-size:14.5px; font-weight:600; line-height:1.35;}
+  .cy small{display:block; font-weight:400; color:#9a5b53; font-size:12px;}
+  .arrow{color:var(--faint); font-weight:700; font-size:18px;}
+  .cy-note{font-size:15px; color:var(--muted); margin-top:20px;}
+  .cy-note .em{color:var(--warn); font-family:var(--mono); font-size:13.5px; display:block; margin-top:4px;}
+
+  /* transition */
+  .shift{background:linear-gradient(180deg,#f3f1fd,#fbfaff); border:1px solid var(--phase-line);
+    border-radius:14px; padding:26px 28px;}
+  .shift .q{font-size:20px; font-weight:700; color:var(--phase); letter-spacing:-.01em; line-height:1.45;}
+  .shift .src{font-size:14px; color:var(--faint); margin-top:12px; font-family:var(--mono);}
+
+  /* 7 principles compact */
+  .axes{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:24px;}
+  .axis{border:1px solid var(--line-2); border-radius:13px; padding:18px;}
+  .axis .ax-tag{font-family:var(--mono); font-size:11px; color:var(--phase); letter-spacing:.05em; font-weight:600;}
+  .axis h3{margin:4px 0 12px; font-size:15px; font-weight:700;}
+  .axis ul{list-style:none; margin:0; padding:0; display:grid; gap:11px;}
+  .axis li{font-size:14px; display:flex; gap:9px; align-items:flex-start; line-height:1.5;}
+  .axis li .pn{flex:none; color:var(--phase); font-weight:700; font-family:var(--mono);}
+
+  /* FLOW — the centerpiece */
+  .flow{display:flex; flex-direction:column; margin-top:6px;}
+  .stage{display:flex; gap:20px; align-items:center; background:var(--bg);
+    border:1px solid var(--line-2); border-radius:14px; padding:20px 24px;}
+  .stage.opt{border-style:dashed; border-color:var(--phase-line); background:#fdfcff;}
+  .st-num{flex:none; width:44px; height:44px; border-radius:12px; background:var(--phase-soft);
+    color:var(--phase); font-family:var(--mono); font-weight:700; font-size:19px;
+    display:flex; align-items:center; justify-content:center;}
+  .st-body{flex:1; min-width:0;}
+  .st-title{font-size:19px; font-weight:700; display:flex; align-items:center; gap:11px; flex-wrap:wrap; line-height:1.3;}
+  .sdd{font-family:var(--mono); font-size:12px; letter-spacing:.05em; color:var(--phase);
+    background:var(--phase-soft); border-radius:6px; padding:3px 9px; font-weight:600;}
+  .opt-tag{font-family:var(--mono); font-size:11px; letter-spacing:.07em; color:#6c64c4;
+    background:#efedfb; border:1px solid var(--phase-line); border-radius:999px; padding:2px 10px;}
+  .st-sub{font-size:15px; color:var(--muted); margin-top:6px; line-height:1.6;}
+  .st-sub ul{margin:6px 0 0; padding-left:2px; list-style:none; display:grid; gap:5px;}
+  .st-sub li{padding-left:16px; position:relative;}
+  .st-sub li::before{content:"·"; position:absolute; left:4px; color:var(--phase); font-weight:700;}
+
+  .conn{height:22px; position:relative;}
+  .conn::before{content:""; position:absolute; top:0; bottom:0; left:44px; width:2px; background:var(--phase-line);}
+  .gatebar{position:relative; margin:6px 0;}
+  .gatebar::before{content:""; position:absolute; top:-16px; bottom:-16px; left:44px; width:2px; background:var(--phase-line);}
+  .gate-chip{position:relative; z-index:1; display:inline-flex; margin-left:22px; align-items:center; gap:8px;
+    background:var(--gate-soft); border:1px solid var(--gate-line); color:var(--gate);
+    border-radius:999px; padding:7px 16px; font-size:13.5px; font-weight:600;}
+  .dor{position:relative; margin:8px 0;}
+  .dor::before{content:""; position:absolute; top:-16px; bottom:-16px; left:44px; width:2px; background:var(--phase-line);}
+  .dor-card{position:relative; z-index:1; border:1.5px solid var(--gate-line); background:var(--gate-soft);
+    border-radius:14px; padding:16px 22px;}
+  .dor-card .dh{font-size:16px; font-weight:700; color:var(--gate);}
+  .dor-card .dh .en{font-family:var(--mono); font-size:12px; color:#8a5512; letter-spacing:.05em; margin-left:8px; font-weight:600;}
+  .dor-card .dl{font-size:13.5px; color:#7c5417; margin-top:6px; line-height:1.6;}
+
+  /* two-up mechanisms */
+  .mech{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  .card{border:1px solid var(--line-2); border-radius:14px; padding:22px 24px;}
+  .card h3{margin:0 0 4px; font-size:16px; font-weight:700;}
+  .card .csub{font-size:13px; color:var(--faint); margin-bottom:16px;}
+  .six{display:grid; gap:11px; margin:0; padding:0; list-style:none;}
+  .six li{display:flex; gap:11px; font-size:14.5px; align-items:flex-start; line-height:1.5;}
+  .six .n{flex:none; font-family:var(--mono); font-weight:700; color:var(--phase);}
+  .six .who{color:var(--faint); font-size:12.5px; font-family:var(--mono);}
+  .six li.star .n{color:var(--gate);}
+  .checks{display:grid; gap:10px; margin:0; padding:0; list-style:none;}
+  .checks li{display:flex; gap:11px; font-size:14.5px; align-items:flex-start; line-height:1.5;}
+  .checks .bx{flex:none; width:17px; height:17px; border:1.5px solid var(--gate-line); border-radius:5px; margin-top:3px;}
+  .checks li.add{color:var(--note);} .checks li.add .bx{border-color:var(--note-line);}
+  .checks li.add .ours{font-family:var(--mono); font-size:10px; font-weight:700; margin-left:4px;}
+
+  /* tables */
+  .tbl-wrap{overflow-x:auto; border:1px solid var(--line-2); border-radius:14px; margin-top:8px;}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:600px;}
+  th,td{text-align:left; padding:14px 18px; vertical-align:top; border-bottom:1px solid var(--line);}
+  thead th{background:var(--paper); font-size:12.5px; font-weight:700; color:var(--muted); white-space:nowrap;}
+  tbody tr:last-child td{border-bottom:none;}
+  td.step{white-space:nowrap; font-weight:700;} td.step .sdd{margin-left:5px;}
+  tr.gaterow td{background:var(--gate-soft); color:var(--gate); font-weight:600;}
+  .gate-cell{color:var(--gate); font-weight:600; white-space:nowrap;}
+  .star{color:var(--gate);}
+  table.atb td.b{color:var(--muted);} table.atb td.a{background:#faf9fe;} table.atb td.a b{color:var(--phase);}
+  .cal .lvl{font-weight:700; white-space:nowrap;}
+
+  /* agenda + start */
+  .agenda{list-style:none; margin:0; padding:0; display:grid; gap:12px;}
+  .agenda li{display:flex; gap:15px; align-items:flex-start; border:1px solid var(--line-2);
+    border-radius:12px; padding:16px 18px;}
+  .agenda .num{flex:none; width:28px; height:28px; border-radius:8px; background:var(--gate-soft);
+    color:var(--gate); font-family:var(--mono); font-weight:700; font-size:14px;
+    display:flex; align-items:center; justify-content:center;}
+  .agenda .txt{font-size:15px;} .agenda .txt em{font-style:normal; color:var(--muted); font-size:14px;}
+  .absorbed{margin-top:16px; font-size:13.5px; color:var(--faint); line-height:1.6;}
+  .absorbed b{color:var(--muted);}
+  .start{border:1px solid var(--phase-line); background:#fbfaff; border-radius:14px;
+    padding:22px 24px; font-size:16px; margin-top:22px;}
+  .start b{color:var(--phase);}
+  .commit{border:1.5px solid var(--phase-line); border-radius:14px; overflow:hidden; margin-top:8px;}
+  .commit .ch{background:var(--phase-soft); padding:16px 22px; font-size:15.5px; color:var(--phase); font-weight:700;}
+  .commit ul{list-style:none; margin:0; padding:6px 22px 4px;}
+  .commit li{display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); font-size:15px; line-height:1.55;}
+  .commit li:last-child{border-bottom:none;}
+  .commit li .bx{flex:none; width:20px; height:20px; border:2px solid var(--phase-line); border-radius:6px; margin-top:1px;}
+  .signoff{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; padding:16px 22px; background:var(--paper); border-top:1px solid var(--line); font-size:14.5px;}
+  .signoff .role{display:inline-flex; align-items:center; gap:8px; color:var(--muted);}
+  .signoff .role .bx{width:16px; height:16px; border:1.5px solid var(--line-2); border-radius:4px;}
+  .signoff .date{margin-left:auto; color:var(--faint); font-family:var(--mono); font-size:13px;}
+  .pdetail{display:flex; flex-direction:column; gap:14px;}
+  .pd-stage{border:1px solid var(--line-2); border-radius:12px; padding:16px 20px;}
+  .pd-stage.plain{background:var(--paper); padding:13px 20px;}
+  .pd-name{font-size:16px; font-weight:700; color:var(--phase); display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .pd-desc{font-size:14.5px; color:var(--muted); margin-top:6px; line-height:1.62;}
+  .pd-stage ul{margin:11px 0 0; padding:0; list-style:none; display:grid; gap:8px;}
+  .pd-stage li{font-size:14.5px; padding-left:17px; position:relative; line-height:1.55;}
+  .pd-stage li::before{content:"·"; position:absolute; left:5px; color:var(--phase); font-weight:700;}
+  .pd-stage li .role{font-weight:700; color:var(--ink);}
+  .pd-stage li ul{margin:8px 0 0; padding-left:6px; gap:6px;}
+  .pd-stage li ul li{color:var(--muted); font-size:14px;}
+  .pd-stage li ul li::before{content:"–"; color:var(--faint); font-weight:400;}
+  .rtag{font-weight:700; font-size:12.5px; padding:2px 9px; border-radius:6px; display:inline-block;}
+  .r-plan{color:#4f46b8; background:#efedfb;}
+  .r-dev{color:#2158b0; background:#e7f0fb;}
+  .r-qa{color:#9a5b0d; background:#fbeeda;}
+  .r-mkt{color:#a83a6c; background:#fbe9f1;}
+  .r-design{color:#0e7c66; background:#e7f5f0;}
+  .rlegend{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 22px;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:20px; font-size:13px; color:var(--muted);}
+  .legend .key{display:inline-flex; align-items:center; gap:8px;}
+  .sw{width:15px; height:15px; border-radius:4px; flex:none;}
+  .sw.p{background:var(--phase);} .sw.g{background:var(--gate);} .sw.o{background:transparent;border:1.5px dashed var(--phase-line);} .sw.n{background:var(--note);}
+
+  footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--line); font-size:12.5px;
+    color:var(--faint); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+  @media (max-width:760px){ .axes,.mech{grid-template-columns:1fr;} .inner{padding:34px 22px 44px;} h1{font-size:26px;} }
+  @media print{ body{background:#fff;padding:0;} .page{border:none;border-radius:0;max-width:none;}
+    .inner{padding:26px 30px;} section,.stage,.axis,.card,.agenda li{break-inside:avoid;} section{margin-top:38px;} }
+</style>
+</head>
+<body>
+<div class="page"><div class="inner">
+
+  <header>
+    <div class="eyebrow">WEBLING AX · 브리핑</div>
+    <h1>파편화된 개인 AX에서<br>통합된 실행 프로세스로</h1>
+    <p class="lede">Spec-Driven Development(대표안)과 우리 운영 프로세스를 하나로 합친 최종본입니다.</p>
+    <div class="meta"><span><b>대상</b> 대표 · CTO</span><span>·</span><span><b>작성</b> 엘리</span><span>·</span><span><b>상태</b> 최종 검토</span></div>
+  </header>
+
+  <!-- SUMMARY -->
+  <div class="summary">
+    <div class="srow"><div class="slabel q">문제</div><div class="stext">개인은 AI를 쓰는데 <b>프로세스는 그대로</b>다. 깨진 프로세스에 AI가 얹히면 더 빨리 깨진다.</div></div>
+    <div class="srow"><div class="slabel s">전환</div><div class="stext"><b>확정을 앞으로 당기고</b>, 검증을 코딩 앞단의 공유 게이트로 옮긴다. (SDD)</div></div>
+    <div class="srow"><div class="slabel a">우리가 할 것</div><div class="stext">기획 검증을 <b>기획·개발·QA 공동 단계</b>로, 코딩 전에 <b>Definition of Ready</b> 게이트. 먼저 1건으로 검증.</div></div>
+  </div>
+
+  <!-- 01 진단 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>왜 바꾸나 — 악순환</h2></div>
+    <div class="sec-sub">AI 쓰는 '개인'은 있는데, AI 쓰는 '프로세스'는 없다</div>
+    <div class="cycle">
+      <span class="cy">기획서 작성<small>혼자 · Claude</small></span><span class="arrow">→</span>
+      <span class="cy">일방 전달</span><span class="arrow">→</span>
+      <span class="cy">바이브 코딩</span><span class="arrow">→</span>
+      <span class="cy">누락·결함<small>뒤늦게 발견</small></span><span class="arrow">→</span>
+      <span class="cy">동일 재작업<small>원점으로</small></span>
+    </div>
+    <div class="cy-note">깨진 프로세스 + AI = 더 빨리 깨진다. AI는 시스템의 품질을 '증폭'할 뿐이다.
+      <span class="em">출처: Google DORA 2024–2025</span></div>
+    <div class="comment"><span class="lbl">PM 코멘트</span>이 악순환은 우리 실데이터로 입증됨 — <b>구독 서비스</b>가 정확히 "설계·합의 없이 명세 의존 개발 → QA 이슈 300여 건"이었고, <b>벡터</b>는 "필요 직군(렌더)을 기획 단독으로 못 잡아 QA에서야 발견"이었다. 진단이 곧 우리 회고다.</div>
+  </section>
+
+  <!-- 02 전환 + 원칙 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>핵심 전환 — Spec-Driven Development</h2></div>
+    <div class="shift">
+      <div class="q">"확정을 앞으로 당기고, 검증을 코딩 앞단의 공유 게이트로 옮긴다."</div>
+      <div class="src">코드가 아니라 '확정된 명세'가 단일 진실 · 명세화 → 계획 → 작업 분해 → 구현</div>
+    </div>
+    <div class="axes">
+      <div class="axis"><div class="ax-tag">축 1 · 관점</div><h3>프로세스가 단위</h3>
+        <ul><li><span class="pn">①</span>개인의 AI 사용이 아니라, 일의 흐름 전체를 AI로 통합</li></ul></div>
+      <div class="axis"><div class="ax-tag">축 2 · 정의</div><h3>함께, 앞에서 확정</h3>
+        <ul><li><span class="pn">②</span>확정 명세 = 단일 진실</li><li><span class="pn">③</span>명세는 함께 — 혼자 통과 금지</li><li><span class="pn">④</span>QA 기준을 코딩 앞단에 (Shift-left)</li></ul></div>
+      <div class="axis"><div class="ax-tag">축 3 · 구조</div><h3>구조로 강제</h3>
+        <ul><li><span class="pn">⑤</span>구현 시작 게이트 (DoR)</li><li><span class="pn">⑥</span>명세는 살아있다 — 명세를 수정</li><li><span class="pn">⑦</span>모두의 Claude가 같은 컨텍스트</li></ul></div>
+    </div>
+    <div class="comment"><span class="lbl">PM 코멘트</span>③·④·⑤가 우리 회고 3건의 직접 처방이다. ⑦(같은 컨텍스트)은 우리가 이미 CLAUDE.md·스킬 표준화로 착수 중 — 방향이 일치하므로 그 위에 정렬하면 된다.</div>
+  </section>
+
+  <!-- 03 프로세스 (centerpiece) -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>실행 프로세스</h2></div>
+    <div class="sec-sub">한글 단계명 + SDD 영문 병기 · 기획 검증은 공동 단계 · 디자인은 선택</div>
+    <div class="flow">
+
+      <div class="stage">
+        <div class="st-num">1</div>
+        <div class="st-body">
+          <div class="st-title">기획 <span class="sdd">Specify</span> <span style="font-weight:500;color:var(--faint);font-size:15px">· 명세</span></div>
+          <div class="st-sub">기획 주관 — 문제·목표·성공 정의 중심으로 단일 명세 초안을 작성한다. (드래프트 · PRD)</div>
+        </div>
+      </div>
+      <div class="conn"></div>
+
+      <div class="stage">
+        <div class="st-num">2</div>
+        <div class="st-body">
+          <div class="st-title">기획 검증 <span class="sdd">Specify</span></div>
+          <div class="st-sub"><ul>
+            <li>기획 + 개발 + QA 공동 작성 · Claude가 누락·모순·가정 선추출</li>
+            <li>프로젝트에 투입되는 인원 확정 — 프로젝트에 따라 마케팅·디자인도 포함</li>
+            <li>공통 페이지에 문서 업데이트</li>
+            <li>해당 단계에서 in-scope 항목 최종 확인 점검</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="conn"></div>
+
+      <div class="stage opt">
+        <div class="st-num">3</div>
+        <div class="st-body">
+          <div class="st-title">디자인 <span class="sdd">Design</span> <span class="opt-tag">선택</span></div>
+          <div class="st-sub">UI/UX 신규·변경 동반 시 — 시안 작업 → 리뷰 → 명세에 반영한다.</div>
+        </div>
+      </div>
+
+      <div class="dor"><div class="dor-card">
+        <div class="dh">▸ Definition of Ready <span class="en">구현 시작 게이트</span></div>
+        <div class="dl">측정 가능 · 인수기준·시나리오 · 개발 설계 합의 · non-goals · Claude 모순/누락 검증 · (디자인 시 시안 확정) · (외부 의존성 확정·데드라인) · 작업 리스트 세분화</div>
+      </div></div>
+
+      <div class="stage">
+        <div class="st-num">4</div>
+        <div class="st-body">
+          <div class="st-title">개발 <span class="sdd">Implement</span></div>
+          <div class="st-sub">atomic task 단위로 구현. 명세가 단일 진실이며, 변경은 코드가 아니라 <b>명세를 수정</b>한다.</div>
+        </div>
+      </div>
+      <div class="gatebar"><span class="gate-chip">인수 기준 충족</span></div>
+
+      <div class="stage">
+        <div class="st-num">5</div>
+        <div class="st-body">
+          <div class="st-title">QA <span class="sdd">Verify</span></div>
+          <div class="st-sub">사전 정의된 인수 기준·시나리오를 '확인'하고 회귀를 돈다. 릴리즈 체크 리스트도 확인한다. 코딩 후 QA는 확인만 남아 줄어든다.</div>
+        </div>
+      </div>
+      <div class="gatebar"><span class="gate-chip">QA 통과</span></div>
+
+      <div class="stage">
+        <div class="st-num">6</div>
+        <div class="st-body">
+          <div class="st-title">릴리즈 <span class="sdd">Release</span></div>
+          <div class="st-sub">세니티 테스트 → 오픈. (세니티 통과 = 오픈 승인)</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="legend">
+      <span class="key"><span class="sw p"></span>단계</span>
+      <span class="key"><span class="sw g"></span>게이트</span>
+      <span class="key"><span class="sw o"></span>선택 단계</span>
+    </div>
+  </section>
+
+  <!-- 04 mechanisms -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>두 개의 장치</h2></div>
+    <div class="sec-sub">'무엇을 쓰는가'(명세 문서)와 '언제 코딩을 시작하는가'(게이트)</div>
+    <div class="mech">
+      <div class="card">
+        <h3>단일 명세 문서 · 6요소</h3>
+        <div class="csub">드래프트·PRD·QA 시트·설계를 하나의 살아있는 문서로</div>
+        <ol class="six">
+          <li><span class="n">1</span><span>무엇을 · 왜 <span class="who">기획</span></span></li>
+          <li class="star"><span class="n">2 ★</span><span>인수 기준 · 시나리오 <span class="who">QA</span></span></li>
+          <li><span class="n">3</span><span>기술 설계 · 제약 · 필요 직군 <span class="who">개발</span></span></li>
+          <li><span class="n">4</span><span>작업 분해 (atomic task) <span class="who">개발+Claude</span></span></li>
+          <li><span class="n">5</span><span>리스크 · 미해결 질문 <span class="who">전원</span></span></li>
+          <li><span class="n">6</span><span>범위 밖 (non-goals) <span class="who">전원</span></span></li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Definition of Ready</h3>
+        <div class="csub">프로젝트마다 · 통과해야 코딩을 시작한다 (대표안 5 + 운영 보강 3)</div>
+        <ul class="checks">
+          <li><span class="bx"></span>성공/실패가 측정 가능한가</li>
+          <li><span class="bx"></span>인수 기준 · 테스트 시나리오 포함</li>
+          <li><span class="bx"></span>개발자가 설계 검토 · 합의 (받기만 X)</li>
+          <li><span class="bx"></span>non-goals 명시</li>
+          <li><span class="bx"></span>Claude로 명세 모순 · 누락 검증</li>
+          <li class="add"><span class="bx"></span>외부 의존성 확정 또는 데드라인 <span class="ours">보강</span></li>
+          <li class="add"><span class="bx"></span>디자인 필요 시 시안 확정 <span class="ours">보강</span></li>
+          <li class="add"><span class="bx"></span>각 담당자가 맡은 일(작업 분해)을 이해했는지 전원 확인 <span class="ours">보강</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 R&R + calibration -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>R&amp;R · 산출물 · 캘리브레이션</h2></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>단계</th><th>산출물</th><th>주 R&amp;R</th></tr></thead>
+      <tbody>
+        <tr><td class="step">기획<span class="sdd">Specify</span></td><td>드래프트, PRD</td><td>기획(주관)</td></tr>
+        <tr><td class="step">기획 검증<span class="sdd">Specify</span></td><td>최종 PRD, 테스트 시나리오, 개발 설계 확정 (계획 문서)</td><td>기획(진행)·개발(설계)·QA(인수기준) <b>공동</b><br>+ 마케팅·디자인</td></tr>
+        <tr><td class="step">디자인 <span class="star">·선택</span></td><td>디자인 시안 (Figma)</td><td>디자인(주관) / 기획·개발(리뷰)</td></tr>
+        <tr class="gaterow"><td>▸ Definition of Ready</td><td>—</td><td>기획·개발·QA 3자 합의<br>+ 마케팅·디자인</td></tr>
+        <tr><td class="step">개발<span class="sdd">Implement</span></td><td>구현물, 갱신된 명세<br>개발 검증(전체 연동)</td><td>개발팀(주관) / PM(명세 관리)</td></tr>
+        <tr><td class="step">QA<span class="sdd">Verify</span></td><td>검증 리포트(QA) · 릴리즈 체크 리스트(기획)</td><td>QA·PM(실행) / 개발(엣지)</td></tr>
+        <tr><td class="step">릴리즈<span class="sdd">Release</span></td><td>릴리즈 노트</td><td>PM·개발(세니티) / 오픈 승인자 <span class="star">*정의 필요</span></td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl-wrap"><table class="cal">
+      <thead><tr><th style="width:16%">무게</th><th style="width:30%">적용 대상</th><th>구성</th></tr></thead>
+      <tbody>
+        <tr><td class="lvl">가벼운</td><td>작고 명확한 변경</td><td>인수 기준 + 짧은 설계 메모 (기획 검증 공동 세션 생략 가능)</td></tr>
+        <tr><td class="lvl">표준</td><td>대부분의 기능</td><td>6요소 풀 + 기획 검증(공동)</td></tr>
+        <tr><td class="lvl">풀</td><td>결제·정산·교차 시스템 등 고위험</td><td>별도 아키텍처 리뷰 + AI 산출물 감사</td></tr>
+      </tbody>
+    </table></div>
+    <div class="comment"><span class="lbl">PM 코멘트</span>기존 Fast/Full Track을 3단으로 정밀화한 것. '풀'의 고위험 예시를 스냅스·오프린트미의 <b>결제·정산·POD 주문·통합편집기 교차 연동</b>으로 명문화하면 바로 운영 가능하다.</div>
+  </section>
+
+  <!-- 06 As-Is To-Be -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>무엇이 나아지나</h2></div>
+    <div class="tbl-wrap"><table class="atb">
+      <thead><tr><th>영역</th><th>현재 (As-Is)</th><th>개선 (To-Be)</th></tr></thead>
+      <tbody>
+        <tr><td class="step">기획↔검증</td><td class="b">단독 작성 후 순차 검증, 합의 0</td><td class="a"><b>기획 검증</b> — 프로젝트 참여 인원 공동 확정 (기획·개발·QA, 마케팅, 디자인)</td></tr>
+        <tr><td class="step">산출물</td><td class="b">드래프트·PRD·QA 시트·설계 분산</td><td class="a"><b>계획 문서</b>로 수렴 (6요소)</td></tr>
+        <tr><td class="step">구현 시작</td><td class="b">정성적 판단 의존</td><td class="a"><b>Definition of Ready</b> 체크리스트</td></tr>
+        <tr><td class="step">QA 시점</td><td class="b">코딩 후 검증, 리소스 미보장</td><td class="a"><b>Shift-left</b> — 인수기준 앞단 확정 · 개발 검증 이후 진행</td></tr>
+        <tr><td class="step">변경 관리</td><td class="b">외부 확정 지연·잦은 변경</td><td class="a">명세가 단일 진실 · <b>명세 수정</b>으로만</td></tr>
+        <tr><td class="step">건별 무게</td><td class="b">Fast/Full 2단, 암묵적</td><td class="a"><b>3단 캘리브레이션</b> (리스크 비례)</td></tr>
+        <tr><td class="step">승인 주체</td><td class="b">승인자 불명확 (특히 오픈)</td><td class="a">게이트별 <b>승인자(RACI)</b> 명시</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- 07 실제 프로젝트 실행 프로세스 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">07</span><h2>실제 프로젝트 실행 프로세스</h2></div>
+    <div class="sec-sub">단계별 실무 운영 상세 — 각 단계에서 유관 부서가 무엇을 확인·합의하는가</div>
+    <div class="rlegend">
+      <span class="rtag r-plan">기획</span>
+      <span class="rtag r-dev">개발</span>
+      <span class="rtag r-qa">QA</span>
+      <span class="rtag r-mkt">마케팅</span>
+      <span class="rtag r-design">디자인</span>
+    </div>
+    <div class="pdetail">
+
+      <div class="pd-stage plain">
+        <div class="pd-name">기획</div>
+      </div>
+
+      <div class="pd-stage">
+        <div class="pd-name">기획 검증</div>
+        <div class="pd-desc">유관 부서가 모두 참여해 필요 기능·누락 요소를 싱크하여 <b>최종 기획서</b>를 만든다. 누락되거나 케이스를 추가하는 사항에 대해 기획 합의점을 만드는 단계.</div>
+        <ul>
+          <li><span class="rtag r-dev">개발</span> 개발 진행 시 누락 사항이 없는지 사전 체크 후 업데이트</li>
+          <li><span class="rtag r-mkt">마케팅</span> 해당 요소로 마케팅 진행 시 필요 요구사항 체크</li>
+          <li><span class="rtag r-design">디자인</span> 디자인 진행 시 필요 사항 체크</li>
+          <li><span class="rtag r-qa">QA</span> QA 시나리오 작성 시 체크가 필요한 항목</li>
+        </ul>
+      </div>
+
+      <div class="pd-stage">
+        <div class="pd-name">Definition of Ready</div>
+        <ul>
+          <li>기획 검증 이후 — 최종 완성·협의된 리스트가 나온다
+            <ul>
+              <li>이후 기획서는 홀드되며, 추가 발생 요소는 상호 합의하에 업데이트</li>
+              <li>구성원 R&amp;R 인지 체크 작성</li>
+            </ul>
+          </li>
+          <li>작업 리스트 업데이트
+            <ul>
+              <li>기획 기준 세부 업무 업데이트 및 일정 반영</li>
+              <li>스킬: 태스크 업데이트</li>
+            </ul>
+          </li>
+          <li>루틴 태스크 관리에 추가
+            <ul>
+              <li>스킬: 루틴 스케줄</li>
+              <li>일정 관리</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="pd-stage plain">
+        <div class="pd-name">디자인 / 개발</div>
+      </div>
+
+      <div class="pd-stage">
+        <div class="pd-name">개발 <span class="sdd">Implement</span></div>
+        <ul>
+          <li>개발 완료 시 실제 구현된 업무 검증까지 필요 — 자신의 영역만이 아니라 백엔드·프론트 등 <b>전체 연동이 필요한 영역의 개발 검증</b>을 완료한 이후 전달</li>
+        </ul>
+      </div>
+
+      <div class="pd-stage">
+        <div class="pd-name">QA · 릴리즈 검수 <span class="sdd">Verify</span></div>
+        <ul>
+          <li><span class="rtag r-qa">QA</span> 테스트 시나리오 적합성 검수 · 세니티 테스트 검수</li>
+          <li><span class="rtag r-plan">기획</span> 릴리즈 체크 리스트 검수</li>
+          <li>오류는 개발 단계에서 누수가 최소화되어 전달됐다는 가정하에, 전체 시나리오·세니티 테스트를 수행</li>
+          <li>필요 기능이 정상 적용됐는지 체크 — 릴리즈 체크 리스트가 정상 수행되지 않으면 이슈 협업 필요</li>
+        </ul>
+      </div>
+
+      <div class="pd-stage plain">
+        <div class="pd-name">릴리즈 <span class="sdd">Release</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 08 이해·합의 체크리스트 -->
+  <section>
+    <div class="sec-head"><span class="sec-num">08</span><h2>이해 · 합의 체크리스트</h2></div>
+    <div class="sec-sub">이번 방식 전환으로 우리가 무엇을 해야 하는지, 팀 전원이 이해하고 합의했는지 확인한다. (Definition of Ready는 매 프로젝트 게이트 / 아래는 이번 전환에 대한 1회성 팀 합의)</div>
+    <div class="commit">
+      <div class="ch">우리는 다음을 이해했고, 함께 실행하기로 합의한다</div>
+      <ul>
+        <li><span class="bx"></span>기획 검증을 <b>기획·개발·QA가 함께</b> 하는 공동 단계로 운영한다</li>
+        <li><span class="bx"></span>코딩을 시작하기 전 <b>Definition of Ready</b> 게이트를 반드시 통과시킨다</li>
+        <li><span class="bx"></span>명세(계획 문서) 하나를 <b>단일 진실</b>로 두고, 변경은 코드가 아니라 명세를 수정한다</li>
+        <li><span class="bx"></span>QA 기준(인수 기준·시나리오)을 <b>코딩 앞단에서 확정</b>한다 (Shift-left)</li>
+        <li><span class="bx"></span>건의 리스크에 따라 <b>캘리브레이션</b>(가벼운/표준/풀)을 적용한다</li>
+        <li><span class="bx"></span>외부 의존성(요금제·정책 등)은 <b>확정 또는 데드라인</b>을 DoR에서 확인한다</li>
+        <li><span class="bx"></span>먼저 <b>1건 파일럿</b>으로 적용하고 baseline과 비교한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>WEBLING · 프로젝트 실행 원칙 (브리핑)</span>
+    <span>스냅스 · 오프린트미 · POD SHOP · 통합편집기</span>
+  </footer>
+
+</div></div>
+</body>
+</html>
